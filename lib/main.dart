@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:locket/core/router/go_router.dart';
+import 'package:locket/core/theme/theme.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 void main() {
   runApp(ProviderScope(child: const Locket()));
@@ -10,12 +13,11 @@ class Locket extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text("hello wolrd"),
-        ),
-      ),
+    return ShadApp.router(
+      debugShowCheckedModeBanner: false,
+      title: "Locket", 
+      theme: MyTheme.shadThemeData,
+      routerConfig: RouterCfig.routerConfig,
     );
   }
 }
