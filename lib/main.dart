@@ -24,19 +24,26 @@ class Locket extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final routerConfig = ref.watch(routerProvider);
 
-    return switch (routerConfig) {
-      AsyncValue(:final value?) => ShadApp.router(
-        debugShowCheckedModeBanner: false,
-        title: "Locket",
-        theme: MyTheme.shadThemeData,
-        routerConfig: value,
-      ),
-      AsyncValue(error: != null) => const MaterialApp(
-        home: Scaffold(body: Center(child: Text("error"))),
-      ),
-      AsyncValue() => const MaterialApp(
-        home: Scaffold(body: Center(child: CircularProgressIndicator())),
-      ),
-    };
+    // return switch (routerConfig) {
+    //   AsyncValue(:final value?) => ShadApp.router(
+    //     debugShowCheckedModeBanner: false,
+    //     title: "Locket",
+    //     theme: MyTheme.shadThemeData,
+    //     routerConfig: value,
+    //   ),
+    //   AsyncValue(error: != null) => const MaterialApp(
+    //     home: Scaffold(body: Center(child: Text("error"))),
+    //   ),
+    //   AsyncValue() => const MaterialApp(
+    //     home: Scaffold(body: Center(child: CircularProgressIndicator())),
+    //   ),
+    // };
+
+    return ShadApp.router(
+      debugShowCheckedModeBanner: false,
+      title: "Locket",
+      theme: MyTheme.shadThemeData,
+      routerConfig: routerConfig,
+    );
   }
 }

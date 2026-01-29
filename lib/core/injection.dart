@@ -49,8 +49,9 @@ final dioProvider = FutureProvider<Dio>((ref) async {
 });
 
 // config router
-final routerProvider = FutureProvider<GoRouter>((ref) async {
-  final router = GoRouter(
+final routerProvider = Provider<GoRouter>((ref) {
+  final loginStatus = ref.watch(authStateProvider);
+  return GoRouter(
     initialLocation: '/profile',
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
@@ -70,13 +71,10 @@ final routerProvider = FutureProvider<GoRouter>((ref) async {
         ],
       ),
     ],
-    redirect: (_, _) async {
-      print("redirect");
-      final loginStatus = await ref.watch(loginStatusProvider.future);
-      print("loginStatus: $loginStatus");
-      if (!loginStatus) return '/login';
+    redirect: (_, _) {
+      print("check redirect");
+      if (loginStatus.value?.refreshToken == null) return '/login';
       return null;
     },
   );
-  return router;
 });

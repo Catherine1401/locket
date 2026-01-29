@@ -1,17 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:locket/core/injection.dart';
+import 'package:locket/core/config/token.dart';
+import 'package:locket/features/users/injection.dart';
 
-final loginStatusProvider = AsyncNotifierProvider<LoginStatusNotifier, bool>(
-  () => LoginStatusNotifier(),
-);
-
-base class LoginStatusNotifier extends AsyncNotifier<bool> {
-  @override
-  FutureOr<bool> build() async {
-    final token = await ref.watch(tokenProvider.future);
-    print("token: ${token.toString()}");
-    return token.refreshToken != null;
-  }
-}
+final authStateProvider = StreamProvider<Token?>((ref) async* {
+  final auth = await ref.read(authRepositoryProvider.future);
+  yield* auth.authStateChanges();
+});

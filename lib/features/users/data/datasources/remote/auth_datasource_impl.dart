@@ -48,4 +48,9 @@ base class AuthDataSourceImpl implements AuthDatasource {
     _token.refreshToken = null;
   }
 
+  @override
+  FutureOr<Token?> getToken() {
+    return _token;
+  }
+
 }

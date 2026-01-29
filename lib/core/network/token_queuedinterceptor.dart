@@ -21,8 +21,8 @@ base class TokenQueuedinterceptor extends QueuedInterceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response!.statusCode == 401 &&
-        err.response!.data['message'] == 'unauthorized') {
+    if (err.response?.statusCode == 401 &&
+        err.response?.data['message'] == 'unauthorized') {
       try {
         final refreshToken = _token.refreshToken;
         if (refreshToken != null) {

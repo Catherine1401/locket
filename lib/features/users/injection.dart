@@ -5,6 +5,7 @@ import 'package:locket/features/users/data/datasources/remote/auth_datasource_im
 import 'package:locket/features/users/data/repositories/auth_repository_impl.dart';
 import 'package:locket/features/users/domain/repositories/auth_repository.dart';
 import 'package:locket/features/users/domain/usecases/login_usecase.dart';
+import 'package:locket/features/users/domain/usecases/signout_usecase.dart';
 
 final authDatasoueceProvider = FutureProvider<AuthDatasource>((ref) async {
   final token = await ref.watch(tokenProvider.future);
@@ -22,6 +23,11 @@ final authRepositoryProvider = FutureProvider<AuthRepository>((ref) async {
 });
 
 final loginUseCaseProvider = FutureProvider<LoginUseCase>((ref) async {
-  final authRepository = await ref.watch(authRepositoryProvider.future);
+  final authRepository = await ref.read(authRepositoryProvider.future);
   return LoginUseCase(authRepository);
+});
+
+final signoutUseCaseProvider = FutureProvider<SignoutUseCase>((ref) async {
+  final authRepository = await ref.read(authRepositoryProvider.future);
+  return SignoutUseCase(authRepository);
 });

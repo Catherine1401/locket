@@ -6,4 +6,5 @@ abstract interface class AuthDatasource {
   Future<String> getGoogleTokenId();
   FutureOr<Token?> saveToken(Token token);
   Future<void> clearToken();
+  FutureOr<Token?> getToken();
 }

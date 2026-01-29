@@ -8,7 +8,9 @@ import 'package:locket/features/users/domain/repositories/auth_repository.dart';
 base class AuthRepositoryImpl implements AuthRepository {
   final Dio _dio;
   final AuthDatasource _authDatasource;
-  const AuthRepositoryImpl(this._dio, this._authDatasource);
+  AuthRepositoryImpl(this._dio, this._authDatasource);
+
+  final _authStateController = StreamController<Token?>.broadcast();
 
   @override
   FutureOr<Token?> loginWithGoogle() async {
@@ -39,6 +41,8 @@ base class AuthRepositoryImpl implements AuthRepository {
         Token(accessToken: accessToken, refreshToken: refreshToken),
       );
 
+      _authStateController.add(token);
+
       return token;
     } catch (e) {
       print("error from loginWithGoogle: $e");
@@ -53,8 +57,23 @@ base class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> signOut() {
-    // TODO: implement signOut
-    throw UnimplementedError();
+  Future<void> signOut() async {
+    final token = await _authDatasource.getToken();
+
+    if (token == null) return;
+    const path = '/auth/logout';
+    try {
+      final reponse = await _dio.post(
+        path,
+        data: {'refreshToken': token.refreshToken},
+      );
+      await _authDatasource.clearToken();
+      _authStateController.add(Token(accessToken: null, refreshToken: null));
+    } catch (e) {
+      return;
+    }
   }
+
+  @override
+  Stream<Token?> authStateChanges() => _authStateController.stream;
 }
