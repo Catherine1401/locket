@@ -8,8 +8,7 @@ import 'package:locket/features/users/domain/repositories/auth_repository.dart';
 base class AuthRepositoryImpl implements AuthRepository {
   final Dio _dio;
   final AuthDatasource _authDatasource;
-  final Token _token;
-  const AuthRepositoryImpl(this._dio, this._authDatasource, this._token);
+  const AuthRepositoryImpl(this._dio, this._authDatasource);
 
   @override
   FutureOr<Token?> loginWithGoogle() async {
@@ -18,7 +17,11 @@ base class AuthRepositoryImpl implements AuthRepository {
       final idToken = await _authDatasource.getGoogleTokenId();
       if (idToken == "") return null;
 
-      final response = await _dio.post(path, data: {'idToken': idToken});
+      final response = await _dio.post(
+        path,
+        data: {'idToken': idToken},
+        options: Options(extra: {'skipAuth': true}),
+      );
 
       if (response.statusCode != 200) return null;
       print("data from loginWithGoogle: ${response.data}");
@@ -32,12 +35,11 @@ base class AuthRepositoryImpl implements AuthRepository {
         _ => throw Exception("Invalid response from loginWithGoogle"),
       };
 
-      _token.accessToken = accessToken;
-      _token.refreshToken = refreshToken;
+      final token = await _authDatasource.saveToken(
+        Token(accessToken: accessToken, refreshToken: refreshToken),
+      );
 
-      await _authDatasource.saveToken(_token);
-
-      return _token;
+      return token;
     } catch (e) {
       print("error from loginWithGoogle: $e");
       return null;

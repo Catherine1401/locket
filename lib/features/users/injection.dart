@@ -6,24 +6,22 @@ import 'package:locket/features/users/data/repositories/auth_repository_impl.dar
 import 'package:locket/features/users/domain/repositories/auth_repository.dart';
 import 'package:locket/features/users/domain/usecases/login_usecase.dart';
 
-final authDatasoueceProvider = Provider<AuthDatasource>((ref) {
+final authDatasoueceProvider = FutureProvider<AuthDatasource>((ref) async {
+  final token = await ref.watch(tokenProvider.future);
   return AuthDataSourceImpl(
     ref.read(googleProvider),
     ref.read(storageProvider),
+    token,
   );
 });
 
 final authRepositoryProvider = FutureProvider<AuthRepository>((ref) async {
-  final token = await ref.watch(tokenProvider.future);
-  return AuthRepositoryImpl(
-    ref.read(dioProvider),
-    ref.read(authDatasoueceProvider),
-    token,
-  );
+  final dio = await ref.read(dioProvider.future);
+  final authDatasource = await ref.read(authDatasoueceProvider.future);
+  return AuthRepositoryImpl(dio, authDatasource);
 });
 
 final loginUseCaseProvider = FutureProvider<LoginUseCase>((ref) async {
   final authRepository = await ref.watch(authRepositoryProvider.future);
   return LoginUseCase(authRepository);
 });
-
