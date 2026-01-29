@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:locket/core/theme/colors.dart';
+import 'package:locket/features/users/presentation/riverpod/login_provider.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     const logo = "Locket";
     const slogan = "Live pics from your friends on your home screen";
     const messageLogin = "Login with Google";
+
 
     return Container(
       color: MyColors.defaultBackground,
@@ -22,7 +25,7 @@ class LoginScreen extends StatelessWidget {
             const SizedBox(height: 24),
             _buildSlogan(context, slogan),
             const SizedBox(height: 40),
-            _buildLoginButton(context, messageLogin),
+            _buildLoginButton(context, ref, messageLogin),
           ],
         ),
       ),
@@ -58,7 +61,7 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLoginButton(BuildContext context, String messageLogin) {
+  Widget _buildLoginButton(BuildContext context, WidgetRef ref, String messageLogin) {
     return ShadButton(
       width: 194,
       height: 54,
@@ -71,7 +74,10 @@ class LoginScreen extends StatelessWidget {
         messageLogin,
         style: ShadTheme.of(context).textTheme.custom['messageLogin'],
       ),
-      onPressed: () {},
+      onPressed: () async {
+        print("login");
+        await ref.read(loginProvider.notifier).login();
+      },
     );
   }
 }
