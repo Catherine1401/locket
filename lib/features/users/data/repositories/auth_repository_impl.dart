@@ -75,5 +75,9 @@ base class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Stream<Token?> authStateChanges() => _authStateController.stream;
+  Stream<Token?> authStateChanges() async* {
+    final token = await _authDatasource.getToken();
+    _authStateController.add(token);
+    yield* _authStateController.stream;
+  }
 }

@@ -3,7 +3,7 @@ base class Profile {
   final String email;
   final String displayName;
   final String avatarUrl;
-  final String birthday;
+  final String? birthday;
 
   const Profile({
     required this.id,

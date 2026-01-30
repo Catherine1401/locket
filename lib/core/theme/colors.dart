@@ -8,4 +8,7 @@ base class MyColors {
   static const slogan = Color(0xFFB8B7B5);
   static const messageLogin = Color(0xFF241A00);
   static const bgButtonLogin = Color(0xFFFFB901);
+  static const bgProfile = Color(0xFF393939);
+  static const name = Color(0xFFEDEDED);
+  static const nameAppbar = Color(0xFFDEDAD9);
 }

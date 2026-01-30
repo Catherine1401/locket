@@ -21,6 +21,16 @@ base class MyTextStyle {
         fontWeight: FontWeight.w800, 
         color: MyColors.messageLogin
       ),
-    },
+      'name': TextStyle(
+        fontSize: 21,
+        fontWeight: FontWeight.w800,
+        color: MyColors.name,
+      ),
+      'nameAppbar': TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.w800,
+        color: MyColors.nameAppbar,
+      )
+   },
   );
 }

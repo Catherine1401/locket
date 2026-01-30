@@ -10,14 +10,17 @@ final profileProvider = AsyncNotifierProvider<ProfileNotifier, Profile>(
 
 base class ProfileNotifier extends AsyncNotifier<Profile> {
   @override
-  FutureOr<Profile> build() {
-    return Profile(
-      id: '123',
-      email: 'test@test.com',
-      displayName: 'test',
-      avatarUrl: 'https://avatars.githubusercontent.com/u/135643?v=4',
-      birthday: '2000-01-01',
-    );
+  FutureOr<Profile> build() async {
+    final profileProvider = await ref.read(getProfileUseCaseProvider.future);
+    final profile = await profileProvider.call();
+    return profile ??
+        Profile(
+          id: profile!.id,
+          email: profile.email,
+          displayName: profile.displayName,
+          avatarUrl: profile.avatarUrl,
+          birthday: profile.birthday,
+        );
   }
 
   Future<void> logout() async {
