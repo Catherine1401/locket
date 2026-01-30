@@ -11,4 +11,9 @@ base class MyColors {
   static const bgProfile = Color(0xFF393939);
   static const name = Color(0xFFEDEDED);
   static const nameAppbar = Color(0xFFDEDAD9);
+  static const iconProfile = Color(0xFFCDC9C6);
+  static const iconItemProfile = Color(0xFFEFF1EE);
+  static const textItemProfile = Color(0xFFEFEFEF);
+  static const bgItemProfile = Color(0xFF524940);
+  static const bgIconItemProfile = Color(0xFF4A453F);
 }

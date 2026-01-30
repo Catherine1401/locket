@@ -26,6 +26,18 @@ class ProfileAppbar extends ConsumerWidget {
             collapsedHeight: kToolbarHeight,
             expandedHeight: kToolbarHeight,
             centerTitle: true,
+            actions: <Widget>[
+              GestureDetector(
+                onTap: () {},
+                child: SvgPicture.asset(
+                  'assets/icons/forward.svg',
+                  width: 20,
+                  height: 20,
+                  colorFilter: ColorFilter.mode(MyColors.name, BlendMode.srcIn),
+                ),
+              ),
+            ],
+            actionsPadding: const EdgeInsets.only(right: 28),
             title: !isHide
                 ? const SizedBox()
                 : _buildTitle(context, value.avatarUrl, value.displayName),

@@ -43,6 +43,7 @@ dependencies:
   flutter_hooks: ^0.21.3+1
   sliver_tools: ^0.2.12
   cached_network_image: ^3.4.1
+  flutter_svg: ^2.2.3
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +65,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/images/
+    - assets/icons/
   fonts:
     - family: Inter
       fonts:

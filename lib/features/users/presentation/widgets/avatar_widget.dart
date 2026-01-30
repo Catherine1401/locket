@@ -35,7 +35,7 @@ class AvatarWidget extends ConsumerWidget {
       padding: const EdgeInsets.only(top: 20),
       alignment: Alignment.topCenter,
       width: double.infinity,
-      height: 266,
+      height: 220,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

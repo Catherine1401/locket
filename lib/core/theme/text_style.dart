@@ -30,7 +30,17 @@ base class MyTextStyle {
         fontSize: 17,
         fontWeight: FontWeight.w800,
         color: MyColors.nameAppbar,
-      )
+      ),
+      'titleBagdgeProfile': TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w800,
+        color: MyColors.iconProfile,
+      ),
+      'textItemProfile': TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w800,
+        color: MyColors.textItemProfile,
+      ),
    },
   );
 }
