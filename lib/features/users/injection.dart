@@ -11,6 +11,7 @@ import 'package:locket/features/users/domain/repositories/profile_repository.dar
 import 'package:locket/features/users/domain/usecases/get_profile_usecase.dart';
 import 'package:locket/features/users/domain/usecases/login_usecase.dart';
 import 'package:locket/features/users/domain/usecases/signout_usecase.dart';
+import 'package:locket/features/users/domain/usecases/update_displayname_usecase.dart';
 
 // authDatasourceProvider
 final authDatasoueceProvider = FutureProvider<AuthDatasource>((ref) async {
@@ -42,19 +43,34 @@ final signoutUseCaseProvider = FutureProvider<SignoutUseCase>((ref) async {
 });
 
 // profileDatasourceProvider
-final profileDatasourceProvider = FutureProvider<ProfileDatasource>((ref) async {
+final profileDatasourceProvider = FutureProvider<ProfileDatasource>((
+  ref,
+) async {
   final dio = await ref.read(dioProvider.future);
   return ProfileDatasourceImpl(dio);
 });
 
 // profileRepositoryProvider
-final profileRepositoryProvider = FutureProvider<ProfileRepository>((ref) async {
+final profileRepositoryProvider = FutureProvider<ProfileRepository>((
+  ref,
+) async {
   final profileDatasource = await ref.read(profileDatasourceProvider.future);
   return ProfileRepositoryImpl(profileDatasource);
 });
 
 // get profile use case
-final getProfileUseCaseProvider = FutureProvider<GetProfileUseCase>((ref) async {
+final getProfileUseCaseProvider = FutureProvider<GetProfileUseCase>((
+  ref,
+) async {
   final profileRepository = await ref.read(profileRepositoryProvider.future);
   return GetProfileUseCase(profileRepository);
 });
+
+// update display name use case
+final updateDisplayNameUseCaseProvider =
+    FutureProvider<UpdateDisplaynameUsecase>((ref) async {
+      final profileRepository = await ref.read(
+        profileRepositoryProvider.future,
+      );
+      return UpdateDisplaynameUsecase(profileRepository);
+    });

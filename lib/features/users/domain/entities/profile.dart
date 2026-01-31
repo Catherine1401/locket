@@ -21,6 +21,22 @@ base class Profile {
     birthday: json['birthday'],
   );
 
+  Profile copyWith({
+    String? id,
+    String? email,
+    String? displayName,
+    String? avatarUrl,
+    String? birthday,
+  }) {
+    return Profile(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      displayName: displayName ?? this.displayName,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      birthday: birthday ?? this.birthday,
+    );
+  }
+
   @override
   String toString() {
     return 'Profile{id: $id, email: $email, displayName: $displayName, avatarUrl: $avatarUrl, birthday: $birthday}';

@@ -29,5 +29,28 @@ base class ProfileDatasourceImpl implements ProfileDatasource {
       return null;
     }
   }
+
+  @override
+  Future<void> updateAvatar() {
+    // TODO: implement updateAvatar
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateBirthday(String birthday) {
+    // TODO: implement updateBirthday
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateDisplayName(String displayName) async {
+    try {
+      print("updateDisplayName: $displayName");
+      const path = '/users/me/name';
+      await _dio.put(path, data: {'displayName': displayName});
+    } catch (e) {
+      print("Error from updateDisplayName: $e");
+    }
+  }
   
 }

@@ -18,4 +18,9 @@ base class MyColors {
   static const bgIconItemProfile = Color(0xFF4A453F);
   static const danger = Color(0xFFFD3E45);
   static const scroll = Color(0xFF59554A);
+  static const titleEditName = Color(0xFFF2F2F2);
+  static const bgEditName = Color(0xFF333333);
+  static const stickHeader = Color(0xFF646464);
+  static const bgTextField = Color(0xFF474747);
+  static const textButtonSubmit = Color(0xFF292309);
 }

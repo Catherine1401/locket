@@ -41,6 +41,21 @@ base class MyTextStyle {
         fontWeight: FontWeight.w800,
         color: MyColors.textItemProfile,
       ),
+      'titleEditName': TextStyle(
+        fontSize: 23,
+        fontWeight: FontWeight.w700,
+        color: MyColors.titleEditName,
+      ),
+      'contentEditName': TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+        color: MyColors.titleEditName,
+      ),
+      'textButtonSubmit': TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+        color: MyColors.textButtonSubmit,
+      ),
    },
   );
 }
