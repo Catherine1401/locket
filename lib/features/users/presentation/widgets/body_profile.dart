@@ -117,10 +117,12 @@ class BodyProfile extends StatelessWidget {
           BadgeBodyProfile(
             iconUrl: 'assets/icons/danger.svg',
             title: 'Danger Zone',
+            iconColor: MyColors.danger,
             chirdren: <Widget>[
               ItemElementProfile(
                 iconUrl: 'assets/icons/trash.svg',
                 title: 'Delete account',
+                color: MyColors.danger,
               ),
               ItemElementProfile(
                 iconUrl: 'assets/icons/hand.svg',

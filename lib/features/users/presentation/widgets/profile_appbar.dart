@@ -28,6 +28,7 @@ class ProfileAppbar extends ConsumerWidget {
             centerTitle: true,
             actions: <Widget>[
               GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () {},
                 child: SvgPicture.asset(
                   'assets/icons/forward.svg',

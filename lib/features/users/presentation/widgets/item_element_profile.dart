@@ -7,11 +7,13 @@ class ItemElementProfile extends StatelessWidget {
     super.key,
     required this.iconUrl,
     required this.title,
+    this.color = MyColors.iconItemProfile,
     this.onTap,
   });
 
   final String iconUrl;
   final String title;
+  final Color color;
   final VoidCallback? onTap;
 
   @override
@@ -27,37 +29,24 @@ class ItemElementProfile extends StatelessWidget {
           child: Row(
             children: <Widget>[
               // icon
-              Container(
-                width: 40,
-                height: 40,
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(
-                  maxWidth: 38,
-                  maxHeight: 38,
-                ),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: MyColors.bgIconItemProfile,
-                ),
+              SizedBox(
+                width: 20,
+                height: 20,
                 child: SvgPicture.asset(
                   iconUrl,
                   width: double.infinity,
                   height: double.infinity,
-                  colorFilter: ColorFilter.mode(
-                    MyColors.iconItemProfile,
-                    BlendMode.srcIn,
-                  ),
+                  colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
                 ),
               ),
               // title
-              const SizedBox(width: 14),
+              const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   title,
                   style: ShadTheme.of(
                     context,
-                  ).textTheme.custom['textItemProfile'],
+                  ).textTheme.custom['textItemProfile']!.copyWith(color: color),
                 ),
               ),
               // action
@@ -65,10 +54,7 @@ class ItemElementProfile extends StatelessWidget {
                 'assets/icons/forward.svg',
                 width: 8,
                 height: 16,
-                colorFilter: ColorFilter.mode(
-                  MyColors.iconItemProfile,
-                  BlendMode.srcIn,
-                ),
+                colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
               ),
             ],
           ),

@@ -8,12 +8,14 @@ base class MyColors {
   static const slogan = Color(0xFFB8B7B5);
   static const messageLogin = Color(0xFF241A00);
   static const bgButtonLogin = Color(0xFFFFB901);
-  static const bgProfile = Color(0xFF393939);
-  static const name = Color(0xFFEDEDED);
+  static const bgProfile = Color(0xFF232323);
+  static const name = Color(0xFFEBEBEB);
   static const nameAppbar = Color(0xFFDEDAD9);
   static const iconProfile = Color(0xFFCDC9C6);
   static const iconItemProfile = Color(0xFFEFF1EE);
   static const textItemProfile = Color(0xFFEFEFEF);
-  static const bgItemProfile = Color(0xFF524940);
+  static const bgItemProfile = Color(0xFF343432);
   static const bgIconItemProfile = Color(0xFF4A453F);
+  static const danger = Color(0xFFFD3E45);
+  static const scroll = Color(0xFF59554A);
 }
