@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:locket/core/config/token.dart';
@@ -9,7 +10,8 @@ base class AuthDataSourceImpl implements AuthDatasource {
   final GoogleSignIn _google;
   final FlutterSecureStorage _storage;
   final Token _token;
-  const AuthDataSourceImpl(this._google, this._storage, this._token);
+  final Dio _dio;
+  const AuthDataSourceImpl(this._google, this._storage, this._token, this._dio);
 
   @override
   Future<String> getGoogleTokenId() async {
@@ -50,6 +52,22 @@ base class AuthDataSourceImpl implements AuthDatasource {
 
   @override
   FutureOr<Token?> getToken() {
+    return _token;
+  }
+
+  @override
+  FutureOr<Token?> getTokenByRefreshToken() async  {
+    final refreshToken = await _storage.read(key: 'refreshToken');
+    if (refreshToken == null) return null;
+
+    const path = '/auth/refresh';
+    final response = await _dio.post(path, data: {'refreshToken': refreshToken});
+    if (response.statusCode != 200) return null;
+    print("data from getTokenByRefreshToken: ${response.data}");
+
+    final accessToken = response.data['accessToken'];
+    await _storage.write(key: 'accessToken', value: accessToken);
+    _token.accessToken = accessToken;
     return _token;
   }
 

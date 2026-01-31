@@ -10,7 +10,7 @@ base class AuthRepositoryImpl implements AuthRepository {
   final AuthDatasource _authDatasource;
   AuthRepositoryImpl(this._dio, this._authDatasource);
 
-  final _authStateController = StreamController<Token?>.broadcast();
+  final _authStateController = StreamController<bool>.broadcast();
 
   @override
   FutureOr<Token?> loginWithGoogle() async {
@@ -41,7 +41,8 @@ base class AuthRepositoryImpl implements AuthRepository {
         Token(accessToken: accessToken, refreshToken: refreshToken),
       );
 
-      _authStateController.add(token);
+      _authStateController.add(true);
+      print("debug !!!!!");
 
       return token;
     } catch (e) {
@@ -52,8 +53,7 @@ base class AuthRepositoryImpl implements AuthRepository {
 
   @override
   FutureOr<Token?> refreshToken() {
-    // TODO: implement refreshToken
-    throw UnimplementedError();
+    return _authDatasource.getTokenByRefreshToken(); 
   }
 
   @override
@@ -63,21 +63,18 @@ base class AuthRepositoryImpl implements AuthRepository {
     if (token == null) return;
     const path = '/auth/logout';
     try {
-      final reponse = await _dio.post(
-        path,
-        data: {'refreshToken': token.refreshToken},
-      );
+      await _dio.post(path, data: {'refreshToken': token.refreshToken});
       await _authDatasource.clearToken();
-      _authStateController.add(Token(accessToken: null, refreshToken: null));
+      _authStateController.add(false);
     } catch (e) {
       return;
     }
   }
 
   @override
-  Stream<Token?> authStateChanges() async* {
+  Stream<bool> authStateChanges() async* {
     final token = await _authDatasource.getToken();
-    _authStateController.add(token);
+    _authStateController.add(token?.refreshToken == null ? false : true);
     yield* _authStateController.stream;
   }
 }

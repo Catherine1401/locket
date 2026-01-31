@@ -5,9 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:locket/core/config/token.dart';
 import 'package:locket/core/network/token_queuedinterceptor.dart';
+import 'package:locket/features/users/presentation/riverpod/auth_state_provider.dart';
 import 'package:locket/features/users/presentation/screens/login_screen.dart';
 import 'package:locket/features/users/presentation/screens/profile_screen.dart';
-import 'package:locket/shared/presentation/riverpod/login_status.dart';
 import 'package:locket/shared/presentation/screens/root_screen.dart';
 
 const host = String.fromEnvironment('HOST');
@@ -73,7 +73,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
     redirect: (_, _) {
       print("check redirect");
-      if (loginStatus.value?.refreshToken == null) return '/login';
+      if (loginStatus.value == null || loginStatus.value == false) {
+        return '/login';
+      }
       return null;
     },
   );

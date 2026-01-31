@@ -8,7 +8,9 @@ import 'package:locket/features/users/data/repositories/auth_repository_impl.dar
 import 'package:locket/features/users/data/repositories/profile_repository_impl.dart';
 import 'package:locket/features/users/domain/repositories/auth_repository.dart';
 import 'package:locket/features/users/domain/repositories/profile_repository.dart';
+import 'package:locket/features/users/domain/usecases/get_authstate_usecase.dart';
 import 'package:locket/features/users/domain/usecases/get_profile_usecase.dart';
+import 'package:locket/features/users/domain/usecases/get_token_usecase.dart';
 import 'package:locket/features/users/domain/usecases/login_usecase.dart';
 import 'package:locket/features/users/domain/usecases/signout_usecase.dart';
 import 'package:locket/features/users/domain/usecases/update_displayname_usecase.dart';
@@ -16,10 +18,12 @@ import 'package:locket/features/users/domain/usecases/update_displayname_usecase
 // authDatasourceProvider
 final authDatasoueceProvider = FutureProvider<AuthDatasource>((ref) async {
   final token = await ref.watch(tokenProvider.future);
+  final dio = await ref.read(dioProvider.future);
   return AuthDataSourceImpl(
     ref.read(googleProvider),
     ref.read(storageProvider),
     token,
+    dio,
   );
 });
 
@@ -74,3 +78,17 @@ final updateDisplayNameUseCaseProvider =
       );
       return UpdateDisplaynameUsecase(profileRepository);
     });
+
+// get token use case
+final getTokenUseCaseProvider = FutureProvider<GetTokenUseCase>((ref) async {
+  final authRepository = await ref.read(authRepositoryProvider.future);
+  return GetTokenUseCase(authRepository);
+});
+
+// get auth state use case
+final getAuthStateUseCaseProvider = FutureProvider<GetAuthStateUsecase>((
+  ref,
+) async {
+  final authRepository = await ref.read(authRepositoryProvider.future);
+  return GetAuthStateUsecase(authRepository);
+});

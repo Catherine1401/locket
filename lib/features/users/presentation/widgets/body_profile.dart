@@ -1,16 +1,18 @@
 import 'package:bottom_sheet/bottom_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:locket/core/theme/colors.dart';
+import 'package:locket/features/users/presentation/riverpod/profile_provider.dart';
 import 'package:locket/features/users/presentation/screens/edit_name_screen.dart';
 import 'package:locket/features/users/presentation/widgets/badge_body_profile.dart';
 import 'package:locket/features/users/presentation/widgets/header_bottomsheet.dart';
 import 'package:locket/features/users/presentation/widgets/item_element_profile.dart';
 
-class BodyProfile extends StatelessWidget {
+class BodyProfile extends ConsumerWidget {
   const BodyProfile({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       color: MyColors.bgProfile,
@@ -154,6 +156,10 @@ class BodyProfile extends StatelessWidget {
               ItemElementProfile(
                 iconUrl: 'assets/icons/hand.svg',
                 title: 'Log out',
+                onTap: () async {
+                  final profileController = ref.read(profileProvider.notifier);
+                  await profileController.logout();
+                },
               ),
             ],
           ),

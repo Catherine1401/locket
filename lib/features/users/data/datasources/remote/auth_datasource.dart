@@ -7,4 +7,5 @@ abstract interface class AuthDatasource {
   FutureOr<Token?> saveToken(Token token);
   Future<void> clearToken();
   FutureOr<Token?> getToken();
+  FutureOr<Token?> getTokenByRefreshToken();
 }
