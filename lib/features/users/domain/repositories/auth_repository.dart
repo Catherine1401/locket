@@ -7,4 +7,5 @@ abstract interface class AuthRepository {
   FutureOr<Token?> refreshToken();
   Future<void> signOut();
   Stream<bool> authStateChanges();
+  FutureOr<Token?> getToken();
 }

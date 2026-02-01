@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:locket/core/config/token.dart';
 import 'package:locket/core/network/token_queuedinterceptor.dart';
+import 'package:locket/core/utils/auth_event_bus.dart';
 import 'package:locket/features/users/presentation/riverpod/auth_state_provider.dart';
 import 'package:locket/features/users/presentation/screens/login_screen.dart';
 import 'package:locket/features/users/presentation/screens/profile_screen.dart';
@@ -42,15 +44,19 @@ final dioProvider = FutureProvider<Dio>((ref) async {
   );
   final token = await ref.watch(tokenProvider.future);
   dio.interceptors.add(
-    TokenQueuedinterceptor(dio, token, ref.read(storageProvider)),
+    TokenQueuedinterceptor(
+      dio,
+      token,
+      ref.read(storageProvider),
+      ref.read(authEventBusProvider),
+    ),
   );
-  dio.interceptors.add(LogInterceptor(responseBody: true));
+  dio.interceptors.add(LogInterceptor(responseBody: true, requestBody: true));
   return dio;
 });
 
 // config router
 final routerProvider = Provider<GoRouter>((ref) {
-  final loginStatus = ref.watch(authStateProvider);
   return GoRouter(
     initialLocation: '/profile',
     routes: [
@@ -71,12 +77,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
     ],
-    redirect: (_, _) {
-      print("check redirect");
-      if (loginStatus.value == null || loginStatus.value == false) {
+    redirect: (_, _) async {
+      print("redirect");
+      final authState = await ref.watch(authStateProvider.future);
+      if (!authState) {
         return '/login';
       }
       return null;
     },
   );
 });
+
+// auth event bus
+final authEventBusProvider = Provider<AuthEventBus>((_) => AuthEventBus());

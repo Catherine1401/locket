@@ -55,6 +55,8 @@ class ProfileAppbar extends ConsumerWidget {
     String avatarUrl,
     String displayName,
   ) {
+    final maxwidth = MediaQuery.sizeOf(context).width;
+    final avalableWidth = maxwidth * .5;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -67,9 +69,16 @@ class ProfileAppbar extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          displayName,
-          style: ShadTheme.of(context).textTheme.custom['nameAppbar'],
+        ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: avalableWidth),
+          child: Expanded(
+            child: Text(
+              displayName,
+              style: ShadTheme.of(context).textTheme.custom['nameAppbar'],
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
         ),
       ],
     );

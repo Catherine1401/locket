@@ -8,4 +8,7 @@ abstract interface class AuthDatasource {
   Future<void> clearToken();
   FutureOr<Token?> getToken();
   FutureOr<Token?> getTokenByRefreshToken();
+  Stream<bool> authStateChanges();
+  void emitAuthenicated();
+  void emitUnauthenticated();
 }

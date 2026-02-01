@@ -24,6 +24,7 @@ final authDatasoueceProvider = FutureProvider<AuthDatasource>((ref) async {
     ref.read(storageProvider),
     token,
     dio,
+    ref.read(authEventBusProvider),
   );
 });
 

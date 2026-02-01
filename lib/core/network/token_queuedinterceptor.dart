@@ -1,12 +1,19 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:locket/core/config/token.dart';
+import 'package:locket/core/utils/auth_event_bus.dart';
 
 base class TokenQueuedinterceptor extends QueuedInterceptor {
   final Dio _dio;
   final Token _token;
   final FlutterSecureStorage _storage;
-  TokenQueuedinterceptor(this._dio, this._token, this._storage);
+  final AuthEventBus _authEventBus;
+  TokenQueuedinterceptor(
+    this._dio,
+    this._token,
+    this._storage,
+    this._authEventBus,
+  );
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -25,12 +32,17 @@ base class TokenQueuedinterceptor extends QueuedInterceptor {
         err.response?.data['message'] == 'unauthorized') {
       try {
         final refreshToken = _token.refreshToken;
-        if (refreshToken != null) {
+        if (refreshToken == null) {
+          _authEventBus.emitUnauthenticated();
           return handler.next(err);
         }
 
         const path = '/auth/refresh';
-        final response = await _dio.post(path);
+        final response = await _dio.post(
+          path,
+          data: {'refreshToken': refreshToken},
+          options: Options(extra: {'skipAuth': true}),
+        );
         final accessToken = response.data['accessToken'];
         _token.accessToken = accessToken;
         await _storage.write(key: 'accessToken', value: accessToken);

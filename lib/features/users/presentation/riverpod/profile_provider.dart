@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:locket/features/users/domain/entities/profile.dart';
 import 'package:locket/features/users/injection.dart';
+import 'package:locket/features/users/presentation/riverpod/auth_state_provider.dart';
 
 final profileProvider = AsyncNotifierProvider<ProfileNotifier, Profile?>(
   () => ProfileNotifier(),
@@ -12,6 +13,7 @@ base class ProfileNotifier extends AsyncNotifier<Profile?> {
   @override
   FutureOr<Profile?> build() async {
     final profileProvider = await ref.read(getProfileUseCaseProvider.future);
+    await ref.watch(authStateProvider.future);
     final profile = await profileProvider.call();
     return profile;
   }
@@ -28,13 +30,7 @@ base class ProfileNotifier extends AsyncNotifier<Profile?> {
       await signoutUseCase.call();
       print("--- Gọi API Logout thành công ---");
 
-      return Profile(
-        id: '1',
-        email: 'test@test.com',
-        displayName: 'test',
-        avatarUrl: '',
-        birthday: '',
-      );
+      return null;
     });
 
     // Sau khi guard xong, hãy kiểm tra state xem có lỗi không

@@ -7,7 +7,7 @@ base class LoginUseCase {
   final AuthRepository _authRepository;
   const LoginUseCase(this._authRepository);
 
-  FutureOr<Token?> loginWithGoogle() async {
+  FutureOr<Token?> call() async {
     try {
       return await _authRepository.loginWithGoogle();
     } catch (e) {

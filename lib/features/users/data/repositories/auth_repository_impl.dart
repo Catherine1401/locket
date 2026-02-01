@@ -10,8 +10,6 @@ base class AuthRepositoryImpl implements AuthRepository {
   final AuthDatasource _authDatasource;
   AuthRepositoryImpl(this._dio, this._authDatasource);
 
-  final _authStateController = StreamController<bool>.broadcast();
-
   @override
   FutureOr<Token?> loginWithGoogle() async {
     const path = '/auth/google';
@@ -41,7 +39,7 @@ base class AuthRepositoryImpl implements AuthRepository {
         Token(accessToken: accessToken, refreshToken: refreshToken),
       );
 
-      _authStateController.add(true);
+      _authDatasource.emitAuthenicated();
       print("debug !!!!!");
 
       return token;
@@ -53,7 +51,13 @@ base class AuthRepositoryImpl implements AuthRepository {
 
   @override
   FutureOr<Token?> refreshToken() {
-    return _authDatasource.getTokenByRefreshToken(); 
+    final token = _authDatasource.getTokenByRefreshToken();
+    if (token == null) {
+      _authDatasource.emitUnauthenticated();
+      return null;
+    }
+    _authDatasource.emitAuthenicated();
+    return token;
   }
 
   @override
@@ -65,16 +69,19 @@ base class AuthRepositoryImpl implements AuthRepository {
     try {
       await _dio.post(path, data: {'refreshToken': token.refreshToken});
       await _authDatasource.clearToken();
-      _authStateController.add(false);
+      _authDatasource.emitUnauthenticated();
     } catch (e) {
+      _authDatasource.emitUnauthenticated();
       return;
     }
   }
 
   @override
-  Stream<bool> authStateChanges() async* {
-    final token = await _authDatasource.getToken();
-    _authStateController.add(token?.refreshToken == null ? false : true);
-    yield* _authStateController.stream;
+  Stream<bool> authStateChanges() => _authDatasource.authStateChanges();
+
+  @override
+  FutureOr<Token?> getToken() async {
+    // TODO: implement getToken
+    return await _authDatasource.getToken();
   }
 }

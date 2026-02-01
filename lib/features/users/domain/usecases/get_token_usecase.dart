@@ -7,7 +7,7 @@ base class GetTokenUseCase {
 
   Future<Token?> call() async {
     try {
-      return await _authRepository.refreshToken();
+      return await _authRepository.getToken();
     } catch (e) {
       print("error from getTokenUseCase: $e");
       return null;

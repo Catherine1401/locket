@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:locket/core/theme/colors.dart';
-import 'package:locket/features/users/presentation/riverpod/login_provider.dart';
+import 'package:locket/features/users/presentation/riverpod/auth_state_provider.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 class LoginScreen extends ConsumerWidget {
@@ -12,7 +12,6 @@ class LoginScreen extends ConsumerWidget {
     const logo = "Locket";
     const slogan = "Live pics from your friends on your home screen";
     const messageLogin = "Login with Google";
-
 
     return Container(
       color: MyColors.defaultBackground,
@@ -61,7 +60,11 @@ class LoginScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLoginButton(BuildContext context, WidgetRef ref, String messageLogin) {
+  Widget _buildLoginButton(
+    BuildContext context,
+    WidgetRef ref,
+    String messageLogin,
+  ) {
     return ShadButton(
       width: 194,
       height: 54,
@@ -75,8 +78,8 @@ class LoginScreen extends ConsumerWidget {
         style: ShadTheme.of(context).textTheme.custom['messageLogin'],
       ),
       onPressed: () async {
-        print("login");
-        await ref.read(loginProvider.notifier).login();
+        final authStateController = ref.read(authStateProvider.notifier);
+        await authStateController.login();
       },
     );
   }

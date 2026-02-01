@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:locket/core/config/token.dart';
+import 'package:locket/core/utils/auth_event_bus.dart';
 import 'package:locket/features/users/data/datasources/remote/auth_datasource.dart';
 
 base class AuthDataSourceImpl implements AuthDatasource {
@@ -11,7 +12,14 @@ base class AuthDataSourceImpl implements AuthDatasource {
   final FlutterSecureStorage _storage;
   final Token _token;
   final Dio _dio;
-  const AuthDataSourceImpl(this._google, this._storage, this._token, this._dio);
+  final AuthEventBus _authEventBus;
+  const AuthDataSourceImpl(
+    this._google,
+    this._storage,
+    this._token,
+    this._dio,
+    this._authEventBus,
+  );
 
   @override
   Future<String> getGoogleTokenId() async {
@@ -56,12 +64,15 @@ base class AuthDataSourceImpl implements AuthDatasource {
   }
 
   @override
-  FutureOr<Token?> getTokenByRefreshToken() async  {
+  FutureOr<Token?> getTokenByRefreshToken() async {
     final refreshToken = await _storage.read(key: 'refreshToken');
     if (refreshToken == null) return null;
 
     const path = '/auth/refresh';
-    final response = await _dio.post(path, data: {'refreshToken': refreshToken});
+    final response = await _dio.post(
+      path,
+      data: {'refreshToken': refreshToken},
+    );
     if (response.statusCode != 200) return null;
     print("data from getTokenByRefreshToken: ${response.data}");
 
@@ -71,4 +82,21 @@ base class AuthDataSourceImpl implements AuthDatasource {
     return _token;
   }
 
+  @override
+  Stream<bool> authStateChanges() {
+    // TODO: implement authStateChanges
+    return _authEventBus.authStateStream;
+  }
+
+  @override
+  void emitAuthenicated() {
+    // TODO: implement emitAuthenicated
+    _authEventBus.emitAuthenicated();
+  }
+
+  @override
+  void emitUnauthenticated() {
+    // TODO: implement emitUnauthenticated
+    _authEventBus.emitUnauthenticated();
+  }
 }

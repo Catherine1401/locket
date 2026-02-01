@@ -68,9 +68,16 @@ class AvatarWidget extends ConsumerWidget {
   }
 
   Widget _buildName(BuildContext context, String displayName) {
-    return Text(
-      displayName,
-      style: ShadTheme.of(context).textTheme.custom['name'],
+    final maxWidth = MediaQuery.sizeOf(context).width * .5;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: Text(
+        displayName,
+        style: ShadTheme.of(context).textTheme.custom['name'],
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textWidthBasis: TextWidthBasis.longestLine,
+      ),
     );
   }
 }
