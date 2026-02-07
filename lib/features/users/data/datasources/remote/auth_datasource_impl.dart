@@ -7,7 +7,7 @@ import 'package:locket/core/config/token.dart';
 import 'package:locket/core/utils/auth_event_bus.dart';
 import 'package:locket/features/users/data/datasources/remote/auth_datasource.dart';
 
-base class AuthDataSourceImpl implements AuthDatasource {
+final class AuthDataSourceImpl implements AuthDatasource {
   final GoogleSignIn _google;
   final FlutterSecureStorage _storage;
   final Token _token;

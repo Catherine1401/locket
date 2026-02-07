@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-base class MyColors {
+final class MyColors {
   static const white = Color(0xFFFFFFFF);
   static const black = Color(0xFF000000);
   static const logoText = Color(0xFFFEFEFE);

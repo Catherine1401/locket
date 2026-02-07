@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:locket/features/users/data/datasources/remote/profile_datasource.dart';
 import 'package:locket/features/users/domain/entities/profile.dart';
 
-base class ProfileDatasourceImpl implements ProfileDatasource {
+final class ProfileDatasourceImpl implements ProfileDatasource {
   final Dio _dio;
   ProfileDatasourceImpl(this._dio);
 

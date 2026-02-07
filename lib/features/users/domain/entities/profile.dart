@@ -1,4 +1,4 @@
-base class Profile {
+final class Profile {
   final String id;
   final String email;
   final String displayName;

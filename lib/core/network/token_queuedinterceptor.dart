@@ -3,7 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:locket/core/config/token.dart';
 import 'package:locket/core/utils/auth_event_bus.dart';
 
-base class TokenQueuedinterceptor extends QueuedInterceptor {
+final class TokenQueuedinterceptor extends QueuedInterceptor {
   final Dio _dio;
   final Token _token;
   final FlutterSecureStorage _storage;

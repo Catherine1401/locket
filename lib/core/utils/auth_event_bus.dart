@@ -1,6 +1,6 @@
 import 'dart:async';
 
-base class AuthEventBus {
+final class AuthEventBus {
   final _controller = StreamController<bool>.broadcast();
 
   Stream<bool> get authStateStream => _controller.stream;

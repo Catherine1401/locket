@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:locket/core/theme/colors.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
-base class MyTextStyle {
+final class MyTextStyle {
   static final myTextStyle = ShadTextTheme(
     family: "Inter", 
     custom: {

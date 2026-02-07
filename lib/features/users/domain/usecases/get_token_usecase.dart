@@ -1,7 +1,7 @@
 import 'package:locket/core/config/token.dart';
 import 'package:locket/features/users/domain/repositories/auth_repository.dart';
 
-base class GetTokenUseCase {
+final class GetTokenUseCase {
   final AuthRepository _authRepository;
   const GetTokenUseCase(this._authRepository);
 

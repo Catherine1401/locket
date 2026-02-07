@@ -5,7 +5,7 @@ import 'package:locket/core/config/token.dart';
 import 'package:locket/features/users/data/datasources/remote/auth_datasource.dart';
 import 'package:locket/features/users/domain/repositories/auth_repository.dart';
 
-base class AuthRepositoryImpl implements AuthRepository {
+final class AuthRepositoryImpl implements AuthRepository {
   final Dio _dio;
   final AuthDatasource _authDatasource;
   AuthRepositoryImpl(this._dio, this._authDatasource);

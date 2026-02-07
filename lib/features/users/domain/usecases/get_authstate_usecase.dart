@@ -1,6 +1,6 @@
 import 'package:locket/features/users/domain/repositories/auth_repository.dart';
 
-base class GetAuthStateUsecase {
+final class GetAuthStateUsecase {
   final AuthRepository _authRepository;
   const GetAuthStateUsecase(this._authRepository);
 

@@ -1,6 +1,6 @@
 import 'package:locket/features/users/domain/repositories/auth_repository.dart';
 
-base class SignoutUseCase {
+final class SignoutUseCase {
   final AuthRepository _authRepository;
   const SignoutUseCase(this._authRepository);
 
