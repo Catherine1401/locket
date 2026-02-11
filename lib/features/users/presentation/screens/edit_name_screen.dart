@@ -82,6 +82,12 @@ class EditNameScreen extends HookConsumerWidget {
                     if (value.isEmpty) {
                       return 'Please enter your name';
                     }
+                    if (value.trim().length > 20) {
+                      return 'Name cannot be longer than 20 characters';
+                    }
+                    if (value.trim().length < 3) {
+                      return 'Name cannot be shorter than 3 characters';
+                    }
                     return null;
                   },
                 ),
@@ -101,9 +107,10 @@ class EditNameScreen extends HookConsumerWidget {
                       final profileController = ref.read(
                         profileProvider.notifier,
                       );
-                      await profileController.updateDisplayName(
-                        formKey.currentState!.value['name'],
-                      );
+                      final name =
+                          (formKey.currentState!.value['name'] as String)
+                              .trim();
+                      await profileController.updateDisplayName(name);
                       context.pop();
                     } else {
                       print('not save and validate');

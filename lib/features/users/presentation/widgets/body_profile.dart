@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:locket/core/theme/colors.dart';
 import 'package:locket/features/users/presentation/riverpod/profile_provider.dart';
+import 'package:locket/features/users/presentation/screens/edit_birthday_screen.dart';
 import 'package:locket/features/users/presentation/screens/edit_name_screen.dart';
 import 'package:locket/features/users/presentation/widgets/badge_body_profile.dart';
 import 'package:locket/features/users/presentation/widgets/header_bottomsheet.dart';
@@ -72,6 +73,25 @@ class BodyProfile extends ConsumerWidget {
               ItemElementProfile(
                 iconUrl: 'assets/icons/ballon2.svg',
                 title: 'Edit birthday',
+                onTap: () {
+                  showStickyFlexibleBottomSheet(
+                    initHeight: .4,
+                    headerHeight: 24,
+                    isCollapsible: true,
+                    isDismissible: true,
+                    isModal: true,
+                    anchors: [0.0, .4],
+                    bottomSheetColor: MyColors.bgEditName,
+                    bottomSheetBorderRadius: BorderRadius.vertical(
+                      top: Radius.circular(28),
+                    ),
+                    isSafeArea: true,
+                    context: context,
+                    headerBuilder: (_, _) => HeaderBottomsheet(),
+                    bodyBuilder: (_, _) =>
+                        SliverChildListDelegate([EditBirthdayScreen()]),
+                  );
+                },
               ),
               ItemElementProfile(
                 iconUrl: 'assets/icons/envelope.svg',

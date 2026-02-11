@@ -56,6 +56,16 @@ final class MyTextStyle {
         fontWeight: FontWeight.w800,
         color: MyColors.textButtonSubmit,
       ),
+      'titleEditBirthday': TextStyle(
+        fontSize: 19,
+        fontWeight: FontWeight.w700,
+        color: MyColors.titleEditName,
+      ),
+      'subTitleEditBirthday': TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: MyColors.subTitleEditBirthday,
+      ),
    },
   );
 }

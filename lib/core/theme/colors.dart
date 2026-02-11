@@ -23,4 +23,5 @@ final class MyColors {
   static const stickHeader = Color(0xFF646464);
   static const bgTextField = Color(0xFF474747);
   static const textButtonSubmit = Color(0xFF292309);
+  static const subTitleEditBirthday = Color(0xFFBBBBBB);
 }
