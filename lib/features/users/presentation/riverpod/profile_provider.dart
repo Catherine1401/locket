@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:locket/features/users/domain/entities/profile.dart';
 import 'package:locket/features/users/injection.dart';
 import 'package:locket/features/users/presentation/riverpod/auth_state_provider.dart';
@@ -19,7 +20,7 @@ base class ProfileNotifier extends AsyncNotifier<Profile?> {
   }
 
   Future<void> logout() async {
-    print("=== Bắt đầu Logout ==="); // In ngoài guard để chắc chắn thấy
+    print("=== Bắt đầu Logout ===");
     state = const AsyncValue.loading();
 
     state = await AsyncValue.guard(() async {
@@ -33,7 +34,6 @@ base class ProfileNotifier extends AsyncNotifier<Profile?> {
       return null;
     });
 
-    // Sau khi guard xong, hãy kiểm tra state xem có lỗi không
     if (state.hasError) {
       print("Lỗi tìm thấy trong state: ${state.error}");
       print("Chi tiết: ${state.stackTrace}");
@@ -41,11 +41,9 @@ base class ProfileNotifier extends AsyncNotifier<Profile?> {
   }
 
   Future<void> updateDisplayName(String displayName) async {
-    // 1. Lấy giá trị hiện tại ngay lập tức
     final currentUser = state.value;
     state = AsyncValue.loading();
 
-    // 2. Sử dụng guard nhưng trả về đối tượng đã copy từ biến currentUser
     state = await AsyncValue.guard(() async {
       final updateDisplayNameUseCase = await ref.read(
         updateDisplayNameUseCaseProvider.future,
@@ -53,7 +51,6 @@ base class ProfileNotifier extends AsyncNotifier<Profile?> {
 
       await updateDisplayNameUseCase.call(displayName);
 
-      // Trả về bản copy từ currentUser đã lưu, không dùng state.value ở đây
       return currentUser?.copyWith(displayName: displayName);
     });
 
@@ -61,4 +58,26 @@ base class ProfileNotifier extends AsyncNotifier<Profile?> {
       '[debug] Sau khi update: ${state.value?.displayName} (Hash: ${state.value?.hashCode})',
     );
   }
+
+  Future<void> updateAvatar() async {
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (image == null) return;
+
+    final currentUser = state.value;
+    state = AsyncValue.loading();
+
+    state = await AsyncValue.guard(() async {
+      final updateAvatarUseCase = await ref.read(
+        updateAvatarUseCaseProvider.future,
+      );
+      final newAvatarUrl = await updateAvatarUseCase.call(image.path);
+      if (newAvatarUrl == null) return currentUser;
+      return currentUser?.copyWith(avatarUrl: newAvatarUrl);
+    });
+  }
 }
+

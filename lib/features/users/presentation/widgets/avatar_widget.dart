@@ -17,6 +17,7 @@ class AvatarWidget extends ConsumerWidget {
     return switch (profile) {
       AsyncValue(:final value?) => _buildLayout(
         context,
+        ref,
         value.avatarUrl,
         value.displayName,
       ),
@@ -27,6 +28,7 @@ class AvatarWidget extends ConsumerWidget {
 
   Widget _buildLayout(
     BuildContext context,
+    WidgetRef ref,
     String avatarUrl,
     String displayName,
   ) {
@@ -39,7 +41,7 @@ class AvatarWidget extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildAvatar(avatarUrl),
+          _buildAvatar(avatarUrl, ref),
           const SizedBox(height: 12),
           _buildName(context, displayName),
         ],
@@ -47,22 +49,47 @@ class AvatarWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildAvatar(String avatarUrl) {
-    return Container(
-      clipBehavior: Clip.hardEdge,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(width: 4, color: MyColors.bgButtonLogin),
-      ),
-      child: CachedNetworkImage(
-        imageUrl: avatarUrl,
-        fadeOutDuration: const Duration(milliseconds: 500),
-        imageBuilder: (_, image) {
-          return ClipOval(child: Image(image: image));
-        },
-        placeholder: (_, _) => const CircularProgressIndicator(),
-        errorWidget: (_, _, _) => const Icon(Icons.error),
+  Widget _buildAvatar(String avatarUrl, WidgetRef ref) {
+    return GestureDetector(
+      onTap: () => ref.read(profileProvider.notifier).updateAvatar(),
+      child: SizedBox(
+        width: 110,
+        height: 110,
+        child: Stack(
+          children: [
+            Container(
+              width: 110,
+              height: 110,
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(width: 4, color: MyColors.bgButtonLogin),
+              ),
+              child: ClipOval(
+                child: CachedNetworkImage(
+                  imageUrl: avatarUrl,
+                  fadeOutDuration: const Duration(milliseconds: 500),
+                  fit: BoxFit.cover,
+                  placeholder: (_, _) => const CircularProgressIndicator(),
+                  errorWidget: (_, _, _) => const Icon(Icons.error),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: MyColors.bgButtonLogin,
+                  shape: BoxShape.circle,
+                  border: Border.all(width: 2, color: MyColors.bgProfile),
+                ),
+                child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

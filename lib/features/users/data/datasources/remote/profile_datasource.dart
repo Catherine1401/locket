@@ -6,5 +6,6 @@ abstract interface class ProfileDatasource {
   FutureOr<Profile?> getProfile();
   Future<void> updateDisplayName(String displayName);
   Future<void> updateBirthday(String birthday);
-  Future<void> updateAvatar();
+  Future<String?> updateAvatar(String filePath);
 }
+

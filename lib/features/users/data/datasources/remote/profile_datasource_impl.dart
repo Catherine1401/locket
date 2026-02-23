@@ -31,9 +31,21 @@ final class ProfileDatasourceImpl implements ProfileDatasource {
   }
 
   @override
-  Future<void> updateAvatar() {
-    // TODO: implement updateAvatar
-    throw UnimplementedError();
+  Future<String?> updateAvatar(String filePath) async {
+    try {
+      const path = '/users/me/avatar';
+      final formData = FormData.fromMap({
+        'image': await MultipartFile.fromFile(filePath, filename: 'avatar.jpg'),
+      });
+      final response = await _dio.put(path, data: formData);
+      if (response.statusCode == 200) {
+        return response.data['avatarUrl'] as String?;
+      }
+      return null;
+    } catch (e) {
+      print("Error from updateAvatar: $e");
+      return null;
+    }
   }
 
   @override

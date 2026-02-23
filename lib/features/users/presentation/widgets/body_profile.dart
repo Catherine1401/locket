@@ -41,6 +41,7 @@ class BodyProfile extends ConsumerWidget {
               ItemElementProfile(
                 iconUrl: 'assets/icons/profile.svg',
                 title: 'Edit profile picture',
+                onTap: () => ref.read(profileProvider.notifier).updateAvatar(),
               ),
               ItemElementProfile(
                 iconUrl: 'assets/icons/tag.svg',

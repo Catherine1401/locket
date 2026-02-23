@@ -13,6 +13,7 @@ import 'package:locket/features/users/domain/usecases/get_profile_usecase.dart';
 import 'package:locket/features/users/domain/usecases/get_token_usecase.dart';
 import 'package:locket/features/users/domain/usecases/login_usecase.dart';
 import 'package:locket/features/users/domain/usecases/signout_usecase.dart';
+import 'package:locket/features/users/domain/usecases/update_avatar_usecase.dart';
 import 'package:locket/features/users/domain/usecases/update_displayname_usecase.dart';
 
 // authDatasourceProvider
@@ -79,6 +80,14 @@ final updateDisplayNameUseCaseProvider =
       );
       return UpdateDisplaynameUsecase(profileRepository);
     });
+
+// update avatar use case
+final updateAvatarUseCaseProvider = FutureProvider<UpdateAvatarUsecase>((
+  ref,
+) async {
+  final profileRepository = await ref.read(profileRepositoryProvider.future);
+  return UpdateAvatarUsecase(profileRepository);
+});
 
 // get token use case
 final getTokenUseCaseProvider = FutureProvider<GetTokenUseCase>((ref) async {

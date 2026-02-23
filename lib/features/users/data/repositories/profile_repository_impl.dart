@@ -14,9 +14,8 @@ final class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Future<void> updateAvatar() {
-    // TODO: implement updateAvatar
-    throw UnimplementedError();
+  Future<String?> updateAvatar(String filePath) async {
+    return await _datasource.updateAvatar(filePath);
   }
 
   @override
