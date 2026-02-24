@@ -24,136 +24,113 @@ class EditBirthdayScreen extends HookConsumerWidget {
     final profileState = ref.watch(profileProvider);
     final isLoading = profileState is AsyncLoading;
 
-    // Parse existing birthday if any
+    // Parse existing birthday
     final existingBirthday = profileState.value?.birthday;
-    int initialMonth = 1;
-    int initialDay = 1;
+    int? initialMonth;
+    int? initialDay;
     if (existingBirthday != null && existingBirthday.isNotEmpty) {
       final parts = existingBirthday.split('-');
       if (parts.length >= 3) {
-        initialMonth = int.tryParse(parts[1]) ?? 1;
-        initialDay = int.tryParse(parts[2]) ?? 1;
+        initialMonth = int.tryParse(parts[1]);
+        initialDay = int.tryParse(parts[2]);
       }
     }
 
-    // 0 = Month tab, 1 = Day tab
-    final activeTab = useState(0);
-    final selectedMonth = useState(initialMonth); // 1–12
-    final selectedDay = useState(initialDay);     // 1–31
+    final selectedMonth = useState<int?>(initialMonth);
+    final selectedDay = useState<int?>(initialDay);
 
-    final monthController = useScrollController();
-    final dayController = useScrollController();
+    final canSave = selectedMonth.value != null && selectedDay.value != null;
 
-    final itemHeight = 48.0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 32),
 
-    useEffect(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final mOffset = (selectedMonth.value - 1) * itemHeight;
-        final dOffset = (selectedDay.value - 1) * itemHeight;
-        if (monthController.hasClients) {
-          monthController.jumpTo(mOffset);
-        }
-        if (dayController.hasClients) {
-          dayController.jumpTo(dOffset);
-        }
-      });
-      return null;
-    }, []);
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Picker container
-        Container(
-          height: 340,
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2A2A2A),
-            borderRadius: BorderRadius.circular(16),
+          // Title
+          const Text(
+            'When is your birthday?',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
+            ),
+            textAlign: TextAlign.center,
           ),
-          child: Column(
+          const SizedBox(height: 12),
+
+          // Subtitle
+          const Text(
+            "Let us know so we can celebrate together! 🎉",
+            style: TextStyle(
+              color: Color(0xFFAAAAAA),
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 40),
+
+          // Month + Day picker buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                child: Row(
-                  children: [
-                    Text(
-                      activeTab.value == 0 ? 'Month' : 'Day',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const Spacer(),
-                    const Icon(Icons.chevron_right, color: Colors.white54, size: 20),
-                  ],
+              _PickerButton(
+                label: selectedMonth.value != null
+                    ? _months[selectedMonth.value! - 1]
+                    : 'Month',
+                isSelected: selectedMonth.value != null,
+                onTap: () => _showDropdown(
+                  context,
+                  items: _months,
+                  selectedIndex: selectedMonth.value != null
+                      ? selectedMonth.value! - 1
+                      : null,
+                  onSelect: (i) => selectedMonth.value = i + 1,
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFF3A3A3A)),
-
-              // Scrollable list
-              Expanded(
-                child: activeTab.value == 0
-                    ? _buildMonthPicker(
-                        monthController,
-                        selectedMonth,
-                        itemHeight,
-                      )
-                    : _buildDayPicker(
-                        dayController,
-                        selectedDay,
-                        selectedMonth.value,
-                        itemHeight,
-                      ),
-              ),
-
-              const Divider(height: 1, color: Color(0xFF3A3A3A)),
-
-              // Tab switcher
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildTab('Month', activeTab.value == 0, () {
-                      activeTab.value = 0;
-                    }),
-                    const SizedBox(width: 12),
-                    _buildTab('Day', activeTab.value == 1, () {
-                      activeTab.value = 1;
-                    }),
-                  ],
+              const SizedBox(width: 12),
+              _PickerButton(
+                label: selectedDay.value?.toString() ?? 'Day',
+                isSelected: selectedDay.value != null,
+                onTap: () => _showDropdown(
+                  context,
+                  items: List.generate(
+                    _daysInMonth(selectedMonth.value ?? 1),
+                    (i) => '${i + 1}',
+                  ),
+                  selectedIndex: selectedDay.value != null
+                      ? selectedDay.value! - 1
+                      : null,
+                  onSelect: (i) => selectedDay.value = i + 1,
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 40),
 
-        const SizedBox(height: 16),
-
-        // Save button
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: ShadButton(
+          // Save button
+          ShadButton(
             expands: true,
-            height: 48,
-            backgroundColor: MyColors.bgButtonLogin,
+            height: 52,
+            backgroundColor: canSave
+                ? MyColors.bgButtonLogin
+                : const Color(0xFF444444),
             decoration: ShadDecoration(
-              border: ShadBorder.all(radius: BorderRadius.circular(16)),
+              border: ShadBorder.all(radius: BorderRadius.circular(26)),
               secondaryBorder: ShadBorder.none,
             ),
-            onPressed: isLoading
+            onPressed: (!canSave || isLoading)
                 ? null
                 : () async {
-                    // Format: YYYY-MM-DD (dùng year 2000 làm placeholder)
-                    final mm = selectedMonth.value.toString().padLeft(2, '0');
-                    final dd = selectedDay.value.toString().padLeft(2, '0');
-                    final birthday = '2000-$mm-$dd';
+                    final mm = selectedMonth.value!.toString().padLeft(2, '0');
+                    final dd = selectedDay.value!.toString().padLeft(2, '0');
                     await ref
                         .read(profileProvider.notifier)
-                        .updateBirthday(birthday);
+                        .updateBirthday('2000-$mm-$dd');
                     if (context.mounted) Navigator.of(context).pop();
                   },
             leading: isLoading
@@ -165,107 +142,149 @@ class EditBirthdayScreen extends HookConsumerWidget {
                 : null,
             child: Text(
               isLoading ? 'Saving...' : 'Save',
-              style: ShadTheme.of(
-                context,
-              ).textTheme.custom['textButtonSubmit'],
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-      ],
-    );
-  }
-
-  Widget _buildMonthPicker(
-    ScrollController controller,
-    ValueNotifier<int> selected,
-    double itemHeight,
-  ) {
-    return ListView.builder(
-      controller: controller,
-      itemCount: _months.length,
-      itemExtent: itemHeight,
-      itemBuilder: (_, i) {
-        final month = i + 1;
-        final isSelected = selected.value == month;
-        return GestureDetector(
-          onTap: () => selected.value = month,
-          child: Container(
-            color: isSelected
-                ? const Color(0xFF3D3D3D)
-                : Colors.transparent,
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              _months[i],
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white70,
+                color: canSave
+                    ? MyColors.textButtonSubmit
+                    : const Color(0xFF888888),
                 fontSize: 16,
-                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
-        );
-      },
+          const SizedBox(height: 32),
+        ],
+      ),
     );
   }
 
-  Widget _buildDayPicker(
-    ScrollController controller,
-    ValueNotifier<int> selected,
-    int month,
-    double itemHeight,
-  ) {
-    final total = _daysInMonth(month);
-    // Clamp if switching month reduces days
-    if (selected.value > total) selected.value = total;
-
-    return ListView.builder(
-      controller: controller,
-      itemCount: total,
-      itemExtent: itemHeight,
-      itemBuilder: (_, i) {
-        final day = i + 1;
-        final isSelected = selected.value == day;
-        return GestureDetector(
-          onTap: () => selected.value = day,
-          child: Container(
-            color: isSelected
-                ? const Color(0xFF3D3D3D)
-                : Colors.transparent,
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              day.toString(),
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white70,
-                fontSize: 16,
-                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
-              ),
-            ),
-          ),
-        );
-      },
+  void _showDropdown(
+    BuildContext context, {
+    required List<String> items,
+    required int? selectedIndex,
+    required ValueChanged<int> onSelect,
+  }) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (_) => _DropdownDialog(
+        items: items,
+        selectedIndex: selectedIndex,
+        onSelect: onSelect,
+      ),
     );
   }
+}
 
-  Widget _buildTab(String label, bool isActive, VoidCallback onTap) {
+// ─── Picker Button ────────────────────────────────────────────────────────────
+
+class _PickerButton extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _PickerButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 13),
         decoration: BoxDecoration(
-          color: isActive
-              ? const Color(0xFF4A4A4A)
+          color: isSelected
+              ? const Color(0xFF555555)
               : const Color(0xFF3A3A3A),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isActive ? Colors.white : Colors.white60,
-            fontSize: 14,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+            color: isSelected ? Colors.white : const Color(0xFFAAAAAA),
+            fontSize: 15,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Dropdown Dialog ──────────────────────────────────────────────────────────
+
+class _DropdownDialog extends HookWidget {
+  final List<String> items;
+  final int? selectedIndex;
+  final ValueChanged<int> onSelect;
+
+  const _DropdownDialog({
+    required this.items,
+    required this.selectedIndex,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = useScrollController();
+
+    useEffect(() {
+      if (selectedIndex != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final offset = selectedIndex! * 48.0;
+          if (controller.hasClients) {
+            controller.jumpTo(
+              offset.clamp(0.0, controller.position.maxScrollExtent),
+            );
+          }
+        });
+      }
+      return null;
+    }, []);
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        constraints: const BoxConstraints(maxHeight: 340, maxWidth: 280),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2C2C2C),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: ListView.builder(
+            controller: controller,
+            itemCount: items.length,
+            itemExtent: 48,
+            itemBuilder: (_, i) {
+              final isSelected = selectedIndex == i;
+              return GestureDetector(
+                onTap: () {
+                  onSelect(i);
+                  Navigator.of(context).pop();
+                },
+                child: Container(
+                  color: isSelected
+                      ? const Color(0xFF3D3D3D)
+                      : Colors.transparent,
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    items[i],
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.white70,
+                      fontSize: 16,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
