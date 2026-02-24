@@ -49,9 +49,14 @@ final class ProfileDatasourceImpl implements ProfileDatasource {
   }
 
   @override
-  Future<void> updateBirthday(String birthday) {
-    // TODO: implement updateBirthday
-    throw UnimplementedError();
+  @override
+  Future<void> updateBirthday(String birthday) async {
+    try {
+      const path = '/users/me/birthday';
+      await _dio.put(path, data: {'birthday': birthday});
+    } catch (e) {
+      print("Error from updateBirthday: $e");
+    }
   }
 
   @override

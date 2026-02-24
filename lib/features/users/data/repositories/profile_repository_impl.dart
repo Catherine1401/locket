@@ -19,9 +19,9 @@ final class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Future<void> updateBirthday(String birthday) {
-    // TODO: implement updateBirthday
-    throw UnimplementedError();
+  @override
+  Future<void> updateBirthday(String birthday) async {
+    await _datasource.updateBirthday(birthday);
   }
 
   @override

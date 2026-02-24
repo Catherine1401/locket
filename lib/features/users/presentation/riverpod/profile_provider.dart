@@ -59,6 +59,17 @@ base class ProfileNotifier extends AsyncNotifier<Profile?> {
     );
   }
 
+  Future<void> updateBirthday(String birthday) async {
+    final currentUser = state.value;
+    state = AsyncValue.loading();
+
+    state = await AsyncValue.guard(() async {
+      final repo = await ref.read(profileRepositoryProvider.future);
+      await repo.updateBirthday(birthday);
+      return currentUser?.copyWith(birthday: birthday);
+    });
+  }
+
   Future<void> updateAvatar() async {
     final picker = ImagePicker();
     final XFile? image = await picker.pickImage(
