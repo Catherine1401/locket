@@ -34,5 +34,15 @@ final class MyColors {
   static const textSaveButtonDisabled = Color(0xFF888888);
   static const bgDropdownBirthday = Color(0xFF2C2C2C);
   static const bgDropdownItemSelected = Color(0xFF3D3D3D);
+
+  // Camera Screen
+  static const cameraBackground = Color(0xFF000000);
+  static const cameraHeaderBtnBg = Color(0xFF3A3A3A);  // avatar & chat btn
+  static const cameraPillBg = Color(0xFF2C2C2C);       // friend pill solid
+  static const cameraFlashActive = Color(0xFFFFD60A);
+  static const cameraShutterRing = Color(0xFFE6B800);  // darker gold for shutter ring
+  static const cameraViewfinderBg = Color(0xFF111111);
+  static const cameraDragHandle = Color(0x4DFFFFFF);  // rgba(255,255,255,0.30)
 }
+
 

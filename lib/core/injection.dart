@@ -8,7 +8,6 @@ import 'package:locket/core/network/token_queuedinterceptor.dart';
 import 'package:locket/core/utils/auth_event_bus.dart';
 import 'package:locket/features/users/presentation/riverpod/auth_state_provider.dart';
 import 'package:locket/features/users/presentation/screens/login_screen.dart';
-import 'package:locket/features/users/presentation/screens/profile_screen.dart';
 import 'package:locket/shared/presentation/screens/root_screen.dart';
 
 const host = String.fromEnvironment('HOST');
@@ -57,29 +56,15 @@ final dioProvider = FutureProvider<Dio>((ref) async {
 // config router
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/profile',
+    initialLocation: '/',
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
-      StatefulShellRoute.indexedStack(
-        builder: (_, _, navigationShell) {
-          return RootScreen(navigationShell: navigationShell);
-        },
-        branches: [
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/profile',
-                builder: (_, _) => const ProfileScreen(),
-              ),
-            ],
-          ),
-        ],
-      ),
+      GoRoute(path: '/', builder: (_, _) => const RootScreen()),
     ],
-    redirect: (_, _) async {
+    redirect: (_, state) async {
       print("redirect");
       final authState = await ref.watch(authStateProvider.future);
-      if (!authState) {
+      if (!authState && state.uri.path != '/login') {
         return '/login';
       }
       return null;
