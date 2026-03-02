@@ -52,7 +52,7 @@ class EditBirthdayScreen extends HookConsumerWidget {
           const Text(
             'When is your birthday?',
             style: TextStyle(
-              color: Colors.white,
+              color: MyColors.white,
               fontSize: 22,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.3,
@@ -65,7 +65,7 @@ class EditBirthdayScreen extends HookConsumerWidget {
           const Text(
             "Let us know so we can celebrate together! 🎉",
             style: TextStyle(
-              color: Color(0xFFAAAAAA),
+              color: MyColors.textSubtitleBirthday,
               fontSize: 14,
               fontWeight: FontWeight.w400,
               height: 1.5,
@@ -118,7 +118,7 @@ class EditBirthdayScreen extends HookConsumerWidget {
             height: 52,
             backgroundColor: canSave
                 ? MyColors.bgButtonLogin
-                : const Color(0xFF444444),
+                : MyColors.bgSaveButtonDisabled,
             decoration: ShadDecoration(
               border: ShadBorder.all(radius: BorderRadius.circular(26)),
               secondaryBorder: ShadBorder.none,
@@ -145,7 +145,7 @@ class EditBirthdayScreen extends HookConsumerWidget {
               style: TextStyle(
                 color: canSave
                     ? MyColors.textButtonSubmit
-                    : const Color(0xFF888888),
+                    : MyColors.textSaveButtonDisabled,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -197,14 +197,16 @@ class _PickerButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 13),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFF555555)
-              : const Color(0xFF3A3A3A),
+              ? MyColors.bgPickerButtonSelected
+              : MyColors.bgPickerButtonDisabled,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFFAAAAAA),
+            color: isSelected
+                ? MyColors.white
+                : MyColors.textPickerButtonDisabled,
             fontSize: 15,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
@@ -250,7 +252,7 @@ class _DropdownDialog extends HookWidget {
       child: Container(
         constraints: const BoxConstraints(maxHeight: 340, maxWidth: 280),
         decoration: BoxDecoration(
-          color: const Color(0xFF2C2C2C),
+          color: MyColors.bgDropdownBirthday,
           borderRadius: BorderRadius.circular(16),
         ),
         child: ClipRRect(
@@ -268,14 +270,14 @@ class _DropdownDialog extends HookWidget {
                 },
                 child: Container(
                   color: isSelected
-                      ? const Color(0xFF3D3D3D)
+                      ? MyColors.bgDropdownItemSelected
                       : Colors.transparent,
                   alignment: Alignment.centerLeft,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
                     items[i],
                     style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.white70,
+                      color: isSelected ? MyColors.white : MyColors.textSubtitleBirthday,
                       fontSize: 16,
                       fontWeight: isSelected
                           ? FontWeight.w600

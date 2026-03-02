@@ -24,4 +24,15 @@ final class MyColors {
   static const bgTextField = Color(0xFF474747);
   static const textButtonSubmit = Color(0xFF292309);
   static const subTitleEditBirthday = Color(0xFFBBBBBB);
+
+  // Edit Birthday
+  static const textSubtitleBirthday = Color(0xFFAAAAAA);
+  static const bgPickerButtonDisabled = Color(0xFF3A3A3A);
+  static const bgPickerButtonSelected = Color(0xFF555555);
+  static const textPickerButtonDisabled = Color(0xFFAAAAAA);
+  static const bgSaveButtonDisabled = Color(0xFF444444);
+  static const textSaveButtonDisabled = Color(0xFF888888);
+  static const bgDropdownBirthday = Color(0xFF2C2C2C);
+  static const bgDropdownItemSelected = Color(0xFF3D3D3D);
 }
+
