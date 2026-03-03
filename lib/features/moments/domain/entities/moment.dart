@@ -14,7 +14,7 @@ final class Moment {
   });
 
   factory Moment.fromJson(Map<String, dynamic> json) => Moment(
-    id: json['id'] as String,
+    id: json['id'].toString(),
     imageUrl: json['imageUrl'] as String,
     caption: json['caption'] as String?,
     userId: json['userId'] as String,

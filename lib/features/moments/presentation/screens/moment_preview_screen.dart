@@ -1,21 +1,39 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:locket/core/theme/colors.dart';
+import 'package:locket/features/friends/domain/entities/friend.dart';
+import 'package:locket/features/friends/presentation/riverpod/friends_provider.dart';
+import 'package:locket/features/moments/injection.dart';
 
-class MomentPreviewScreen extends StatefulWidget {
+class MomentPreviewScreen extends ConsumerStatefulWidget {
   final String imagePath;
 
   const MomentPreviewScreen({super.key, required this.imagePath});
 
   @override
-  State<MomentPreviewScreen> createState() => _MomentPreviewScreenState();
+  ConsumerState<MomentPreviewScreen> createState() =>
+      _MomentPreviewScreenState();
 }
 
-class _MomentPreviewScreenState extends State<MomentPreviewScreen> {
-  bool _sendToAll = true;
+class _MomentPreviewScreenState extends ConsumerState<MomentPreviewScreen> {
+  // null = "All", otherwise a set of selected friendIds
+  Set<String>? _selectedFriendIds; // null means "All"
   final TextEditingController _messageCtrl = TextEditingController();
   bool _isSending = false;
+  String? _errorMsg;
+
+  bool get _sendToAll => _selectedFriendIds == null;
+  int get _captionWordCount => _countWords(_messageCtrl.text);
+
+  static int _countWords(String text) {
+    final t = text.trim();
+    if (t.isEmpty) return 0;
+    return t.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+  }
 
   @override
   void dispose() {
@@ -25,8 +43,11 @@ class _MomentPreviewScreenState extends State<MomentPreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final friendsAsync = ref.watch(friendsProvider);
+
     return Scaffold(
       backgroundColor: MyColors.cameraBackground,
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Column(
           children: [
@@ -36,40 +57,93 @@ class _MomentPreviewScreenState extends State<MomentPreviewScreen> {
               onClose: () => Navigator.of(context).pop(),
             ),
 
-            // Khối preview + control được canh giữa màn hình
+            // ── Error banner ────────────────────────────────────────
+            if (_errorMsg != null)
+              Container(
+                width: double.infinity,
+                color: Colors.red.withOpacity(0.8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Text(
+                  _errorMsg!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ),
+
+            // ── Main content centered ────────────────────────────────
             Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // ── Photo preview — 1:1 ──────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: _PhotoPreview(
-                      imagePath: widget.imagePath,
-                      message: _messageCtrl.text,
-                      onAddMessage: _onAddMessage,
-                    ),
-                  ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Tính kích thước ảnh: không vượt quá width và chiều cao còn lại
+                  // Trừ đi: page dots (20) + word count (20) + action bar (100) + paddings (~50)
+                  const reservedHeight = 190.0;
+                  final maxPhotoSize = (constraints.maxHeight - reservedHeight)
+                      .clamp(160.0, constraints.maxWidth);
 
-                  // ── Page indicator dots ──────────────────────────
-                  const _PageDots(total: 5, active: 0),
-                  const SizedBox(height: 16),
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Photo preview 1:1
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: _PhotoPreview(
+                          imagePath: widget.imagePath,
+                          message: _messageCtrl.text,
+                          onAddMessage: _onAddMessage,
+                          size: maxPhotoSize,
+                        ),
+                      ),
 
-                  // ── Action bar ───────────────────────────────────
-                  _ActionBar(
-                    isSending: _isSending,
-                    onClose: () => Navigator.of(context).pop(),
-                    onSend: _onSend,
-                    onAddText: _onAddMessage,
-                  ),
-                ],
+                      // Page dots
+                      const _PageDots(total: 5, active: 0),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${_captionWordCount.clamp(0, 999)}/100 từ',
+                        style: TextStyle(
+                          color: _captionWordCount > 100
+                              ? Colors.redAccent
+                              : MyColors.white.withOpacity(0.6),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Action bar
+                      _ActionBar(
+                        isSending: _isSending,
+                        onClose: () => Navigator.of(context).pop(),
+                        onSend: _onSend,
+                        onAddText: _onAddMessage,
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
 
-            // ── Friends selection luôn sát đáy ─────────────────────
+            // ── Friends row always at bottom ─────────────────────────
             _FriendsRow(
+              friendsAsync: friendsAsync,
               sendToAll: _sendToAll,
-              onToggleAll: () => setState(() => _sendToAll = !_sendToAll),
+              selectedFriendIds: _selectedFriendIds ?? {},
+              onToggleAll: () => setState(() => _selectedFriendIds = null),
+              onToggleFriend: (friend) {
+                setState(() {
+                  // When first picking a specific friend, leave "All" mode
+                  _selectedFriendIds ??= {};
+                  final ids = Set<String>.from(_selectedFriendIds!);
+                  if (ids.contains(friend.userId)) {
+                    ids.remove(friend.userId);
+                    _selectedFriendIds =
+                        ids.isEmpty ? null : ids; // back to "All" if empty
+                  } else {
+                    ids.add(friend.userId);
+                    _selectedFriendIds = ids;
+                  }
+                });
+              },
             ),
           ],
         ),
@@ -77,20 +151,71 @@ class _MomentPreviewScreenState extends State<MomentPreviewScreen> {
     );
   }
 
+  // ── Actions ──────────────────────────────────────────────────────────────
+
   Future<void> _onSend() async {
-    setState(() => _isSending = true);
-    // TODO: call create moment API
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) {
-      Navigator.of(context).pop();
+    if (_captionWordCount > 100) {
+      setState(() {
+        _errorMsg = 'Caption tối đa 100 từ';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSending = true;
+      _errorMsg = null;
+    });
+
+    try {
+      final useCase =
+          await ref.read(createMomentUseCaseProvider.future);
+      await useCase.call(
+        widget.imagePath,
+        _messageCtrl.text.trim().isEmpty ? null : _messageCtrl.text.trim(),
+      );
+      if (mounted) Navigator.of(context).pop();
+    } on FormatException catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMsg = e.message;
+          _isSending = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMsg = 'Gửi thất bại. Vui lòng thử lại.';
+          _isSending = false;
+        });
+      }
     }
   }
 
-  void _onDownload() {
-    // TODO: save to gallery
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Saved to gallery')),
-    );
+  void _onDownload() async {
+    try {
+      final hasAccess = await Gal.hasAccess(toAlbum: false);
+      if (!hasAccess) {
+        await Gal.requestAccess(toAlbum: false);
+      }
+      await Gal.putImage(widget.imagePath);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã lưu vào thư viện ảnh'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể lưu ảnh'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _onAddMessage() {
@@ -105,9 +230,7 @@ class _MomentPreviewScreenState extends State<MomentPreviewScreen> {
         )
         .then((value) {
       if (value != null && mounted) {
-        setState(() {
-          _messageCtrl.text = value;
-        });
+        setState(() => _messageCtrl.text = value);
       }
     });
   }
@@ -128,15 +251,8 @@ class _Header extends StatelessWidget {
         height: 40,
         child: Row(
           children: [
-            // Nút đóng (ẩn, chỉ để giữ layout cân đối nếu cần)
-            GestureDetector(
-              onTap: onClose,
-              behavior: HitTestBehavior.opaque,
-              child: const SizedBox(
-                width: 24,
-                height: 24,
-              ),
-            ),
+            // invisible spacer equal to download icon
+            const SizedBox(width: 24, height: 24),
             const Spacer(),
             const Text(
               'Send to...',
@@ -168,17 +284,17 @@ class _PhotoPreview extends StatelessWidget {
   final String imagePath;
   final String message;
   final VoidCallback onAddMessage;
+  final double size;
 
   const _PhotoPreview({
     required this.imagePath,
     required this.message,
     required this.onAddMessage,
+    required this.size,
   });
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size.width;
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
       child: SizedBox(
@@ -187,10 +303,9 @@ class _PhotoPreview extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Photo
             Image.file(File(imagePath), fit: BoxFit.cover),
 
-            // "Add a message" overlay button
+            // "Add a message" overlay
             Positioned(
               bottom: 24,
               left: 40,
@@ -198,8 +313,8 @@ class _PhotoPreview extends StatelessWidget {
               child: GestureDetector(
                 onTap: onAddMessage,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.45),
                     borderRadius: BorderRadius.circular(999),
@@ -227,7 +342,8 @@ class _PhotoPreview extends StatelessWidget {
   }
 }
 
-/// Screen dedicated to typing message with keyboard visible
+// ─── Message Overlay Screen ───────────────────────────────────────────────────
+
 class MomentMessageScreen extends StatefulWidget {
   final String imagePath;
   final String initialText;
@@ -252,7 +368,6 @@ class _MomentMessageScreenState extends State<MomentMessageScreen> {
     _controller = TextEditingController(text: widget.initialText);
     _focusNode = FocusNode();
 
-    // Auto-pop với text khi bàn phím đóng
     _focusNode.addListener(() {
       if (!_focusNode.hasFocus && mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop(_controller.text);
@@ -277,14 +392,12 @@ class _MomentMessageScreenState extends State<MomentMessageScreen> {
       backgroundColor: MyColors.cameraBackground,
       resizeToAvoidBottomInset: true,
       body: GestureDetector(
-        // Tap ngoài → unfocus → auto-pop
         onTap: () => _focusNode.unfocus(),
         child: SafeArea(
           child: Center(
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Ảnh 1:1 ở giữa màn hình
                 ClipRRect(
                   borderRadius: BorderRadius.circular(28),
                   child: AspectRatio(
@@ -295,14 +408,12 @@ class _MomentMessageScreenState extends State<MomentMessageScreen> {
                     ),
                   ),
                 ),
-
-                // TextField đè lên ảnh phía dưới
                 Positioned(
                   bottom: 24,
                   left: 40,
                   right: 40,
                   child: GestureDetector(
-                    onTap: () {}, // chặn tap truyền lên GestureDetector ngoài
+                    onTap: () {},
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 10),
@@ -397,17 +508,13 @@ class _ActionBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // X — discard (to hơn)
+          // X — discard
           GestureDetector(
             onTap: onClose,
-            child: const Icon(
-              Icons.close,
-              color: MyColors.white,
-              size: 32,
-            ),
+            child: const Icon(Icons.close, color: MyColors.white, size: 32),
           ),
 
-          // Send button — vòng tròn lớn giống shutter
+          // Send button
           GestureDetector(
             onTap: isSending ? null : onSend,
             child: Container(
@@ -433,7 +540,7 @@ class _ActionBar extends StatelessWidget {
             ),
           ),
 
-          // Aa+ — add text overlay (to hơn)
+          // Aa text overlay
           GestureDetector(
             onTap: onAddText,
             child: const _AaIcon(),
@@ -470,8 +577,7 @@ class _AaIcon extends StatelessWidget {
               shape: BoxShape.circle,
               color: Colors.white.withOpacity(0.25),
             ),
-            child: const Icon(Icons.auto_awesome,
-                color: MyColors.white, size: 8),
+            child: const Icon(Icons.auto_awesome, color: MyColors.white, size: 8),
           ),
         ),
       ],
@@ -482,38 +588,105 @@ class _AaIcon extends StatelessWidget {
 // ─── Friends Row ──────────────────────────────────────────────────────────────
 
 class _FriendsRow extends StatelessWidget {
+  final AsyncValue<List<Friend>> friendsAsync;
   final bool sendToAll;
+  final Set<String> selectedFriendIds;
   final VoidCallback onToggleAll;
+  final ValueChanged<Friend> onToggleFriend;
 
-  const _FriendsRow({required this.sendToAll, required this.onToggleAll});
+  const _FriendsRow({
+    required this.friendsAsync,
+    required this.sendToAll,
+    required this.selectedFriendIds,
+    required this.onToggleAll,
+    required this.onToggleFriend,
+  });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 96,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        children: [
-          // "All" button
-          _FriendChip(
-            label: 'All',
-            isSelected: sendToAll,
-            onTap: onToggleAll,
-            child: Icon(
-              Icons.group,
-              color: sendToAll
-                  ? MyColors.cameraFlashActive
-                  : MyColors.white,
-              size: 26,
+      child: friendsAsync.when(
+        loading: () => const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: MyColors.white,
             ),
           ),
-          // Placeholder: friends list (no friends yet)
-          // TODO: load from friendsProvider
-        ],
+        ),
+        error: (_, __) => const Center(
+          child: Text(
+            'Không tải được danh sách bạn bè',
+            style: TextStyle(color: MyColors.white, fontSize: 12),
+          ),
+        ),
+        data: (friends) => ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          children: [
+            // "All" button
+            _FriendChip(
+              label: 'Tất cả',
+              isSelected: sendToAll,
+              onTap: onToggleAll,
+              child: Icon(
+                Icons.group,
+                color:
+                    sendToAll ? MyColors.cameraFlashActive : MyColors.white,
+                size: 26,
+              ),
+            ),
+
+            // Real friends
+            ...friends.map(
+              (f) => _FriendChip(
+                label: f.name.split(' ').last, // first name only
+                isSelected: selectedFriendIds.contains(f.userId),
+                onTap: () => onToggleFriend(f),
+                child: _FriendAvatar(friend: f),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+class _FriendAvatar extends StatelessWidget {
+  final Friend friend;
+  const _FriendAvatar({required this.friend});
+
+  @override
+  Widget build(BuildContext context) {
+    final url = friend.avatar;
+    if (url != null && url.isNotEmpty) {
+      return ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: url,
+          width: 56,
+          height: 56,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => const _FallbackIcon(),
+          errorWidget: (_, __, ___) => const _FallbackIcon(),
+        ),
+      );
+    }
+    return const _FallbackIcon();
+  }
+}
+
+class _FallbackIcon extends StatelessWidget {
+  const _FallbackIcon();
+  @override
+  Widget build(BuildContext context) => const Icon(
+        Icons.person_outline,
+        color: MyColors.white,
+        size: 24,
+      );
 }
 
 class _FriendChip extends StatelessWidget {
