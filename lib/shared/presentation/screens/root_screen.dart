@@ -1,40 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:locket/core/injection.dart';
 import 'package:locket/features/moments/presentation/screens/camera_screen.dart';
 import 'package:locket/features/users/presentation/screens/profile_screen.dart';
 
-class RootScreen extends StatefulWidget {
+class RootScreen extends ConsumerWidget {
   const RootScreen({super.key});
 
   @override
-  State<RootScreen> createState() => _RootScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pageController = ref.watch(rootPageControllerProvider);
 
-class _RootScreenState extends State<RootScreen> {
-  late final PageController _pageController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(initialPage: 0); // camera = page 0
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return PopScope(
-      // Khi đang ở profile (page 1), back button quay về camera (page 0)
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        final currentPage = _pageController.page?.round() ?? 0;
-        if (currentPage > 0) {
-          _pageController.animateToPage(
-            0,
+        final currentPage = pageController.page?.round() ?? 1;
+        if (currentPage == 0) {
+          // Đang ở Profile → back về Camera
+          pageController.animateToPage(
+            1,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
           );
@@ -42,11 +27,11 @@ class _RootScreenState extends State<RootScreen> {
       },
       child: Scaffold(
         body: PageView(
-          controller: _pageController,
+          controller: pageController,
           physics: const BouncingScrollPhysics(),
           children: const [
-            CameraScreen(),   // index 0 — default
-            ProfileScreen(),  // index 1 — vuốt trái để tới
+            ProfileScreen(), // index 0 — vuốt phải để tới
+            CameraScreen(),  // index 1 — default
           ],
         ),
       ),

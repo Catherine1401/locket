@@ -1,9 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:locket/core/injection.dart';
 import 'package:locket/core/theme/colors.dart';
+import 'package:locket/features/users/presentation/riverpod/profile_provider.dart';
 
 class CameraScreen extends HookConsumerWidget {
   const CameraScreen({super.key});
@@ -33,50 +36,77 @@ class CameraScreen extends HookConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // ── Header ─────────────────────────────────────────────
-            _TopBar(hasFriends: false),
-            const SizedBox(height: 16),
-
-            // ── Viewfinder — 1:1, 4 corners rounded, 32px margins ──
-            Padding(
-              padding: const EdgeInsets.only(top: 32, bottom: 48),
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: _Viewfinder(
-                  controller: controller.value,
-                  isInitialized: isInitialized.value,
-                ),
+            // ── Header (avatar, bạn bè, chat) ──────────────────────
+            _TopBar(
+              hasFriends: false,
+              avatarUrl: ref.watch(profileProvider).value?.avatarUrl,
+              onAvatarTap: () => ref.read(rootPageControllerProvider).animateToPage(
+                0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
               ),
             ),
 
-            // ── Controls ────────────────────────────────────────────
-            _ControlsBar(
-              isFlashOn: isFlashOn.value,
-              onFlashToggle: () async {
-                isFlashOn.value = !isFlashOn.value;
-                await controller.value?.setFlashMode(
-                  isFlashOn.value ? FlashMode.torch : FlashMode.off,
-                );
-              },
-              onShutter: () async {
-                if (controller.value == null || !isInitialized.value) return;
-                try {
-                  final image = await controller.value!.takePicture();
-                  debugPrint('Photo: ${image.path}');
-                } catch (e) {
-                  debugPrint('Shutter error: $e');
-                }
-              },
-              onFlip: () async {
-                if (cameras.value.length < 2) return;
-                isFrontCamera.value = !isFrontCamera.value;
-                await _switchCamera(cameras.value, controller, isInitialized,
-                    isFrontCamera.value);
-              },
+            // Khối camera + controls được canh giữa theo chiều dọc
+            Expanded(
+              child: Column(
+                children: [
+                  const Spacer(),
+
+                  // ── Viewfinder 1:1 ────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: _Viewfinder(
+                        controller: controller.value,
+                        isInitialized: isInitialized.value,
+                        isFlashOn: isFlashOn.value,
+                        onFlashToggle: () async {
+                          isFlashOn.value = !isFlashOn.value;
+                          await controller.value?.setFlashMode(
+                            isFlashOn.value
+                                ? FlashMode.torch
+                                : FlashMode.off,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // ── Controls ──────────────────────────────────────
+                  _ControlsBar(
+                    onShutter: () async {
+                      if (controller.value == null || !isInitialized.value) {
+                        return;
+                      }
+                      try {
+                        final image = await controller.value!.takePicture();
+                        debugPrint('Photo: ${image.path}');
+                      } catch (e) {
+                        debugPrint('Shutter error: $e');
+                      }
+                    },
+                    onFlip: () async {
+                      if (cameras.value.length < 2) return;
+                      isFrontCamera.value = !isFrontCamera.value;
+                      await _switchCamera(
+                        cameras.value,
+                        controller,
+                        isInitialized,
+                        isFrontCamera.value,
+                      );
+                    },
+                  ),
+
+                  const Spacer(),
+                ],
+              ),
             ),
 
-            // ── Footer flush to bottom ─────────────────────────────
-            const Spacer(),
+            // ── Footer luôn sát đáy ────────────────────────────────
             const _Footer(),
           ],
         ),
@@ -132,7 +162,9 @@ class CameraScreen extends HookConsumerWidget {
 
 class _TopBar extends StatelessWidget {
   final bool hasFriends;
-  const _TopBar({required this.hasFriends});
+  final String? avatarUrl;
+  final VoidCallback? onAvatarTap;
+  const _TopBar({required this.hasFriends, this.avatarUrl, this.onAvatarTap});
 
   @override
   Widget build(BuildContext context) {
@@ -143,10 +175,10 @@ class _TopBar extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Avatar — circle
-            _CircleBtn(
-              child: const Icon(Icons.person_outline,
-                  color: MyColors.white, size: 20),
+            // Avatar — hình thật từ profile
+            _AvatarBtn(
+              avatarUrl: avatarUrl,
+              onTap: onAvatarTap,
             ),
 
             const SizedBox(width: 16),
@@ -170,6 +202,51 @@ class _TopBar extends StatelessWidget {
   }
 }
 
+
+
+// Avatar button — show real profile picture or fallback icon
+class _AvatarBtn extends StatelessWidget {
+  final String? avatarUrl;
+  final VoidCallback? onTap;
+  const _AvatarBtn({this.avatarUrl, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: MyColors.cameraHeaderBtnBg,
+        ),
+        child: ClipOval(
+          child: avatarUrl != null && avatarUrl!.isNotEmpty
+              ? CachedNetworkImage(
+                  imageUrl: avatarUrl!,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) => const _PersonIcon(),
+                  errorWidget: (_, __, ___) => const _PersonIcon(),
+                )
+              : const _PersonIcon(),
+        ),
+      ),
+    );
+  }
+}
+
+class _PersonIcon extends StatelessWidget {
+  const _PersonIcon();
+  @override
+  Widget build(BuildContext context) => const Icon(
+    Icons.person_outline,
+    color: MyColors.white,
+    size: 20,
+  );
+}
+
+// Circle button (generic)
 class _CircleBtn extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
@@ -234,7 +311,7 @@ class _FriendPill extends StatelessWidget {
             const Icon(Icons.group_outlined, color: MyColors.white, size: 18),
             const SizedBox(width: 8),
             Text(
-              hasFriends ? '1 Friend' : 'Add a Friend',
+              hasFriends ? '81 người bạn' : 'Thêm bạn bè',
               style: const TextStyle(
                 color: MyColors.white,
                 fontSize: 15,
@@ -253,33 +330,87 @@ class _FriendPill extends StatelessWidget {
 class _Viewfinder extends StatelessWidget {
   final CameraController? controller;
   final bool isInitialized;
-  const _Viewfinder({this.controller, required this.isInitialized});
+  final bool isFlashOn;
+  final VoidCallback onFlashToggle;
+
+  const _Viewfinder({
+    this.controller,
+    required this.isInitialized,
+    required this.isFlashOn,
+    required this.onFlashToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Full bleed, no margin. Only bottom 2 corners are rounded.
+    // Vuông 1:1, bo tròn 4 góc, icon flash & zoom overlay như ảnh gốc
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: SizedBox.expand(
-        child: isInitialized && controller != null
-            ? FittedBox(
-                fit: BoxFit.cover,
-                // previewSize trả về kích thước sensor gốc (landscape),
-                // swap width↔height để có kích thước portrait thực tế.
-                // FittedBox.cover scale lên để fill 1:1 và crop phần thừa.
-                child: SizedBox(
-                  width: controller!.value.previewSize?.height ?? 720,
-                  height: controller!.value.previewSize?.width ?? 1280,
-                  child: CameraPreview(controller!),
+      borderRadius: BorderRadius.circular(26),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          isInitialized && controller != null
+              ? FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: controller!.value.previewSize?.height ?? 720,
+                    height: controller!.value.previewSize?.width ?? 1280,
+                    child: CameraPreview(controller!),
+                  ),
+                )
+              : const ColoredBox(
+                  color: MyColors.cameraViewfinderBg,
+                  child: Center(
+                    child: Icon(Icons.camera_alt_outlined,
+                        color: MyColors.white, size: 48),
+                  ),
                 ),
-              )
-            : const ColoredBox(
-                color: MyColors.cameraViewfinderBg,
-                child: Center(
-                  child: Icon(Icons.camera_alt_outlined,
-                      color: MyColors.white, size: 48),
+
+          // Flash icon góc trên trái
+          Positioned(
+            top: 8,
+            left: 8,
+            child: GestureDetector(
+              onTap: onFlashToggle,
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.45),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.bolt,
+                  size: 18,
+                  color: isFlashOn
+                      ? MyColors.cameraFlashActive
+                      : MyColors.white,
                 ),
               ),
+            ),
+          ),
+
+          // Zoom badge "1x" góc trên phải
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.45),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Text(
+                '1x',
+                style: TextStyle(
+                  color: MyColors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -288,14 +419,10 @@ class _Viewfinder extends StatelessWidget {
 // ─── Controls Bar ─────────────────────────────────────────────────────────────
 
 class _ControlsBar extends StatelessWidget {
-  final bool isFlashOn;
-  final VoidCallback onFlashToggle;
   final VoidCallback onShutter;
   final VoidCallback onFlip;
 
   const _ControlsBar({
-    required this.isFlashOn,
-    required this.onFlashToggle,
     required this.onShutter,
     required this.onFlip,
   });
@@ -308,39 +435,57 @@ class _ControlsBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Flash — solid filled bolt
+          // Gallery (thư viện ảnh) bên trái – thu nhỏ lại
           GestureDetector(
-            onTap: onFlashToggle,
-            child: Icon(
-              Icons.bolt,
-              size: 36,
-              color: isFlashOn ? MyColors.cameraFlashActive : MyColors.white,
+            onTap: () {},
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: MyColors.cameraHeaderBtnBg,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.photo_library_outlined,
+                size: 22,
+                color: MyColors.white,
+              ),
             ),
           ),
 
           const SizedBox(width: 60),
 
-          // Shutter — 3 layers: yellow ring → black gap → white fill
+          // Shutter — 3 layers: vàng → khoảng đen (mỏng hơn) → lõi trắng
           GestureDetector(
             onTap: onShutter,
             child: Container(
-              width: 84,
-              height: 84,
+              width: 96,
+              height: 96,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.transparent,
                 border: Border.all(
-                  color: MyColors.cameraShutterRing,  // darker gold #E6B800
-                  width: 3,
+                  color: MyColors.bgButtonLogin,
+                  width: 4,
                 ),
               ),
               child: Center(
                 child: Container(
-                  width: 68,
-                  height: 68,
+                  width: 86,
+                  height: 86,
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    color: MyColors.white,
+                    color: MyColors.black,
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 74,
+                      height: 74,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: MyColors.white,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -349,11 +494,11 @@ class _ControlsBar extends StatelessWidget {
 
           const SizedBox(width: 60),
 
-          // Flip — outlined camera + rotate arrow
+          // Flip — icon xoay camera, thu nhỏ lại
           GestureDetector(
             onTap: onFlip,
             child: const Icon(
-              Icons.flip_camera_ios_outlined,
+              Icons.flip_camera_ios,
               size: 36,
               color: MyColors.white,
             ),
@@ -376,46 +521,54 @@ class _Footer extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 12),
-          // History row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: MyColors.cameraHeaderBtnBg,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                child: const Icon(
-                  Icons.landscape_outlined,
-                  color: MyColors.white,
-                  size: 14,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'History',
-                style: TextStyle(
-                  color: MyColors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 8),
-          // Drag handle
+          // Pill "9 Lịch sử"
           Container(
-            width: 36,
-            height: 4,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: MyColors.cameraDragHandle,
-              borderRadius: BorderRadius.circular(2),
+              color: MyColors.bgButtonLogin,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    '9',
+                    style: TextStyle(
+                      color: MyColors.black,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Lịch sử',
+                  style: TextStyle(
+                    color: MyColors.black,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
+          // Arrow chevron xuống
+          const Icon(
+            Icons.expand_more,
+            color: MyColors.white,
+            size: 20,
+          ),
+          const SizedBox(height: 10),
         ],
       ),
     );

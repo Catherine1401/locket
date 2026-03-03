@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
@@ -51,6 +52,13 @@ final dioProvider = FutureProvider<Dio>((ref) async {
   );
   dio.interceptors.add(LogInterceptor(responseBody: true, requestBody: true));
   return dio;
+});
+
+// page controller cho swipe navigation camera ↔ profile
+final rootPageControllerProvider = Provider<PageController>((ref) {
+  final ctrl = PageController(initialPage: 1); // camera = page 1 (default)
+  ref.onDispose(ctrl.dispose);
+  return ctrl;
 });
 
 // config router
