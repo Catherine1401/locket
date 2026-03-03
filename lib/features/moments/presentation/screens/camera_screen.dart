@@ -6,6 +6,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:locket/core/injection.dart';
 import 'package:locket/core/theme/colors.dart';
+import 'package:locket/features/moments/presentation/screens/moment_preview_screen.dart';
 import 'package:locket/features/users/presentation/riverpod/profile_provider.dart';
 
 class CameraScreen extends HookConsumerWidget {
@@ -55,7 +56,7 @@ class CameraScreen extends HookConsumerWidget {
 
                   // ── Viewfinder 1:1 ────────────────────────────────
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                     child: AspectRatio(
                       aspectRatio: 1,
                       child: _Viewfinder(
@@ -84,7 +85,15 @@ class CameraScreen extends HookConsumerWidget {
                       }
                       try {
                         final image = await controller.value!.takePicture();
-                        debugPrint('Photo: ${image.path}');
+                        if (context.mounted) {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => MomentPreviewScreen(
+                                imagePath: image.path,
+                              ),
+                            ),
+                          );
+                        }
                       } catch (e) {
                         debugPrint('Shutter error: $e');
                       }
@@ -283,7 +292,7 @@ class _RoundedSquareBtn extends StatelessWidget {
         height: 44,
         decoration: BoxDecoration(
           color: MyColors.cameraHeaderBtnBg,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(50),
         ),
         child: Center(child: child),
       ),
@@ -344,7 +353,7 @@ class _Viewfinder extends StatelessWidget {
   Widget build(BuildContext context) {
     // Vuông 1:1, bo tròn 4 góc, icon flash & zoom overlay như ảnh gốc
     return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
+      borderRadius: BorderRadius.circular(28),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -443,7 +452,7 @@ class _ControlsBar extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: MyColors.cameraHeaderBtnBg,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(14),
               ),
               child: const Icon(
                 Icons.photo_library_outlined,
