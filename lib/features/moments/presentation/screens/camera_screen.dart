@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:locket/core/injection.dart';
 import 'package:locket/core/theme/colors.dart';
@@ -255,28 +256,7 @@ class _PersonIcon extends StatelessWidget {
   );
 }
 
-// Circle button (generic)
-class _CircleBtn extends StatelessWidget {
-  final Widget child;
-  final VoidCallback? onTap;
-  const _CircleBtn({required this.child, this.onTap});
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: MyColors.cameraHeaderBtnBg,
-        ),
-        child: Center(child: child),
-      ),
-    );
-  }
-}
 
 class _RoundedSquareBtn extends StatelessWidget {
   final Widget child;
@@ -307,7 +287,9 @@ class _FriendPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        context.push('/friends');
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         decoration: BoxDecoration(
@@ -444,24 +426,7 @@ class _ControlsBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Gallery (thư viện ảnh) bên trái – thu nhỏ lại
-          GestureDetector(
-            onTap: () {},
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: MyColors.cameraHeaderBtnBg,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.photo_library_outlined,
-                size: 22,
-                color: MyColors.white,
-              ),
-            ),
-          ),
-
+          const SizedBox(width: 40),
           const SizedBox(width: 60),
 
           // Shutter — 3 layers: vàng → khoảng đen (mỏng hơn) → lõi trắng

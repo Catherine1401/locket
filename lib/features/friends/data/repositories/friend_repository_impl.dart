@@ -8,4 +8,32 @@ final class FriendRepositoryImpl implements FriendRepository {
 
   @override
   Future<List<Friend>> getFriends() => _datasource.getFriends();
+
+  @override
+  Future<Map<String, dynamic>?> getUserByShareCode(String shareCode) =>
+      _datasource.getUserByShareCode(shareCode);
+
+  @override
+  Future<bool> sendFriendRequest(String toUserId) =>
+      _datasource.sendFriendRequest(toUserId);
+
+  @override
+  Future<List<dynamic>> getIncomingRequests() =>
+      _datasource.getIncomingRequests();
+
+  @override
+  Future<List<dynamic>> getOutgoingRequests() =>
+      _datasource.getOutgoingRequests();
+
+  @override
+  Future<bool> respondFriendRequest(String requestId, String status) =>
+      _datasource.respondFriendRequest(requestId, status);
+
+  @override
+  Future<bool> deleteFriendRequest(String requestId) =>
+      _datasource.deleteFriendRequest(requestId);
+
+  @override
+  Future<bool> removeFriend(String friendId) =>
+      _datasource.removeFriend(friendId);
 }

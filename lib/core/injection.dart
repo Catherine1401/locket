@@ -8,6 +8,8 @@ import 'package:locket/core/config/token.dart';
 import 'package:locket/core/network/token_queuedinterceptor.dart';
 import 'package:locket/core/utils/auth_event_bus.dart';
 import 'package:locket/features/users/presentation/riverpod/auth_state_provider.dart';
+import 'package:locket/features/friends/presentation/screens/friend_request_screen.dart';
+import 'package:locket/features/friends/presentation/screens/friends_screen.dart';
 import 'package:locket/features/users/presentation/screens/login_screen.dart';
 import 'package:locket/shared/presentation/screens/root_screen.dart';
 
@@ -68,6 +70,16 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/', builder: (_, _) => const RootScreen()),
+      GoRoute(
+        path: '/add-friend/:shareCode',
+        builder: (_, state) => FriendRequestScreen(
+          shareCode: state.pathParameters['shareCode']!,
+        ),
+      ),
+      GoRoute(
+        path: '/friends',
+        builder: (_, __) => const FriendsScreen(),
+      ),
     ],
     redirect: (_, state) async {
       print("redirect");

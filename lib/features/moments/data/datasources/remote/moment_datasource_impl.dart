@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:dio/dio.dart';
 import 'package:locket/features/moments/data/datasources/remote/moment_datasource.dart';
 import 'package:locket/features/moments/domain/entities/moment.dart';
@@ -19,7 +21,7 @@ final class MomentDatasourceImpl implements MomentDatasource {
       }
       return null;
     } catch (e) {
-      print('MomentDatasourceImpl.createMoment error: $e');
+      log('MomentDatasourceImpl.createMoment error', error: e);
       rethrow;
     }
   }

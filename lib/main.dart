@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:locket/core/injection.dart';
 import 'package:locket/core/theme/theme.dart';
+import 'package:locket/core/utils/deeplink_service.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 const webClientId = String.fromEnvironment('WEB_CLIENT_ID');
@@ -17,11 +18,30 @@ void main() async {
   runApp(ProviderScope(child: const Locket()));
 }
 
-class Locket extends ConsumerWidget {
+class Locket extends ConsumerStatefulWidget {
   const Locket({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<Locket> createState() => _LocketState();
+}
+
+class _LocketState extends ConsumerState<Locket> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(deeplinkServiceProvider).init();
+    });
+  }
+
+  @override
+  void dispose() {
+    ref.read(deeplinkServiceProvider).dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final routerConfig = ref.watch(routerProvider);
 
     // return switch (routerConfig) {
