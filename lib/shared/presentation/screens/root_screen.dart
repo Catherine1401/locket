@@ -20,30 +20,34 @@ class RootScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pageController = ref.watch(rootPageControllerProvider);
 
-    // Kết nối Socket.IO với access token khi người dùng đã authenticated
-    ref.listen(tokenProvider, (previous, tokenAsync) {
-      tokenAsync.whenData((token) {
-        if (token.accessToken != null && token.accessToken!.isNotEmpty) {
-          final socketService = ref.read(socketServiceProvider);
-          if (!socketService.isConnected) {
-            socketService.connect(host, token.accessToken!);
-          }
+    // FIX #1: Dùng ref.watch thay vì ref.listen để fire ngay lập tức
+    // khi token đã có sẵn (user đã đăng nhập trước đó), không chỉ khi thay đổi.
+    final tokenAsync = ref.watch(tokenProvider);
+    tokenAsync.whenData((token) {
+      if (token.accessToken?.isNotEmpty == true) {
+        final socketService = ref.read(socketServiceProvider);
+        if (!socketService.isConnected) {
+          socketService.connect(host, token.accessToken!);
         }
-      });
+      }
     });
 
-    // Invalidate tất cả providers khi token thay đổi (đổi tài khoản / đăng nhập mới)
-    // Previous null → current có token = đăng nhập mới → cần refresh data
+    // FIX #2: Eager-init conversationsProvider ngay khi RootScreen build
+    // để ConversationsNotifier subscribe Socket stream ngay cả khi user chưa
+    // vuốt sang ConversationsScreen.
+    ref.watch(conversationsProvider);
+
+    // Invalidate tất cả providers khi token thay đổi (đổi tài khoản)
     ref.listen(tokenProvider, (previous, next) {
       final prevToken = previous?.value?.accessToken;
       final nextToken = next.value?.accessToken;
-      // Token đổi từ giá trị A sang B → user đổi tài khoản
       if (prevToken != null && nextToken != null && prevToken != nextToken) {
+        // Ngắt socket cũ và kết nối lại với token mới
+        ref.read(socketServiceProvider).disconnect();
         ref.invalidate(profileProvider);
         ref.invalidate(friendsListProvider);
         ref.invalidate(conversationsProvider);
-        ref.invalidate(dioProvider);     // Dio cần re-init với token mới
-        ref.invalidate(tokenProvider);  // Re-read token từ storage
+        ref.invalidate(dioProvider);
       }
     });
 
@@ -53,7 +57,6 @@ class RootScreen extends ConsumerWidget {
         if (didPop) return;
         final currentPage = pageController.page?.round() ?? 1;
         if (currentPage != 1) {
-          // Từ Profile hoặc Conversations → back về Camera
           pageController.animateToPage(
             1,
             duration: const Duration(milliseconds: 300),

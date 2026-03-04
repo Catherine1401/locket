@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:locket/core/injection.dart';
 import 'package:locket/features/messages/domain/entities/conversation.dart';
 import 'package:locket/features/messages/injection.dart';
+import 'package:locket/features/users/presentation/riverpod/profile_provider.dart';
 
 final conversationsProvider =
     AsyncNotifierProvider<ConversationsNotifier, List<Conversation>>(
@@ -42,11 +43,15 @@ final class ConversationsNotifier
       final idx = current.indexWhere((c) => c.id == newMessage.conversationId);
       if (idx == -1) return;
 
+      // Người gửi tin không phải current user mới là chưa đọc
+      final currentUserId = ref.read(profileProvider).value?.id;
+      final isUnread = newMessage.senderId != currentUserId;
+
       // Cập nhật lastMessage và lastMessageAt và đánh dấu chưa đọc
       final updated = current[idx].copyWith(
         lastMessage: newMessage.content,
         lastMessageAt: newMessage.createdAt,
-        isUnread: true,
+        isUnread: isUnread,
       );
 
       // Đưa conversation đó lên đầu danh sách (mới nhất ở trên cùng)
