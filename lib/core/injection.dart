@@ -10,6 +10,9 @@ import 'package:locket/core/utils/auth_event_bus.dart';
 import 'package:locket/features/users/presentation/riverpod/auth_state_provider.dart';
 import 'package:locket/features/friends/presentation/screens/friend_request_screen.dart';
 import 'package:locket/features/friends/presentation/screens/friends_screen.dart';
+import 'package:locket/features/messages/domain/entities/conversation.dart';
+import 'package:locket/features/messages/presentation/screens/chat_screen.dart';
+import 'package:locket/features/messages/presentation/screens/conversations_screen.dart';
 import 'package:locket/features/users/presentation/screens/login_screen.dart';
 import 'package:locket/shared/presentation/screens/root_screen.dart';
 
@@ -79,6 +82,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/friends',
         builder: (_, __) => const FriendsScreen(),
+      ),
+      GoRoute(
+        path: '/messages',
+        builder: (_, __) => const ConversationsScreen(),
+      ),
+      GoRoute(
+        path: '/conversations/:id',
+        builder: (_, state) => ChatScreen(
+          conversationId: state.pathParameters['id']!,
+          conversation: state.extra as Conversation?,
+        ),
       ),
     ],
     redirect: (_, state) async {

@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:locket/core/injection.dart';
+import 'package:locket/features/messages/presentation/screens/conversations_screen.dart';
 import 'package:locket/features/moments/presentation/screens/camera_screen.dart';
 import 'package:locket/features/users/presentation/screens/profile_screen.dart';
+
+// Layout:
+//  index 0 — ProfileScreen      (vuốt phải từ Camera)
+//  index 1 — CameraScreen       (default)
+//  index 2 — ConversationsScreen (vuốt trái từ Camera)
 
 class RootScreen extends ConsumerWidget {
   const RootScreen({super.key});
@@ -16,8 +22,8 @@ class RootScreen extends ConsumerWidget {
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
         final currentPage = pageController.page?.round() ?? 1;
-        if (currentPage == 0) {
-          // Đang ở Profile → back về Camera
+        if (currentPage != 1) {
+          // Từ Profile hoặc Conversations → back về Camera
           pageController.animateToPage(
             1,
             duration: const Duration(milliseconds: 300),
@@ -30,8 +36,9 @@ class RootScreen extends ConsumerWidget {
           controller: pageController,
           physics: const BouncingScrollPhysics(),
           children: const [
-            ProfileScreen(), // index 0 — vuốt phải để tới
-            CameraScreen(),  // index 1 — default
+            ProfileScreen(),       // index 0 — vuốt phải từ Camera
+            CameraScreen(),        // index 1 — default
+            ConversationsScreen(), // index 2 — vuốt trái từ Camera
           ],
         ),
       ),

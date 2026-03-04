@@ -41,7 +41,7 @@ class CameraScreen extends HookConsumerWidget {
     return Scaffold(
       backgroundColor: MyColors.cameraBackground,
       body: GestureDetector(
-        // Vuốt lên bất kỳ đâu → mở FeedScreen
+        // Vuốt lên → FeedScreen
         onVerticalDragEnd: (details) {
           if ((details.primaryVelocity ?? 0) < -300) _openFeed();
         },
@@ -55,6 +55,11 @@ class CameraScreen extends HookConsumerWidget {
                 avatarUrl: ref.watch(profileProvider).value?.avatarUrl,
                 onAvatarTap: () => ref.read(rootPageControllerProvider).animateToPage(
                   0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                ),
+                onChatTap: () => ref.read(rootPageControllerProvider).animateToPage(
+                  2,
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
                 ),
@@ -187,7 +192,8 @@ class _TopBar extends ConsumerWidget {
   final int friendCount;
   final String? avatarUrl;
   final VoidCallback? onAvatarTap;
-  const _TopBar({required this.friendCount, this.avatarUrl, this.onAvatarTap});
+  final VoidCallback? onChatTap;
+  const _TopBar({required this.friendCount, this.avatarUrl, this.onAvatarTap, this.onChatTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -214,6 +220,7 @@ class _TopBar extends ConsumerWidget {
             const SizedBox(width: 16),
 
             _RoundedSquareBtn(
+              onTap: onChatTap,
               child: const Icon(Icons.chat_bubble_rounded,
                   color: MyColors.white, size: 20),
             ),
