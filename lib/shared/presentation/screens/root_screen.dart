@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:locket/core/injection.dart';
+import 'package:locket/features/friends/injection.dart';
 import 'package:locket/features/messages/presentation/screens/conversations_screen.dart';
+import 'package:locket/features/messages/presentation/riverpod/conversations_provider.dart';
 import 'package:locket/features/moments/presentation/screens/camera_screen.dart';
+import 'package:locket/features/users/presentation/riverpod/profile_provider.dart';
 import 'package:locket/features/users/presentation/screens/profile_screen.dart';
 
 // Layout:
@@ -18,7 +21,7 @@ class RootScreen extends ConsumerWidget {
     final pageController = ref.watch(rootPageControllerProvider);
 
     // Kết nối Socket.IO với access token khi người dùng đã authenticated
-    ref.listen(tokenProvider, (_, tokenAsync) {
+    ref.listen(tokenProvider, (previous, tokenAsync) {
       tokenAsync.whenData((token) {
         if (token.accessToken != null && token.accessToken!.isNotEmpty) {
           final socketService = ref.read(socketServiceProvider);
@@ -27,6 +30,21 @@ class RootScreen extends ConsumerWidget {
           }
         }
       });
+    });
+
+    // Invalidate tất cả providers khi token thay đổi (đổi tài khoản / đăng nhập mới)
+    // Previous null → current có token = đăng nhập mới → cần refresh data
+    ref.listen(tokenProvider, (previous, next) {
+      final prevToken = previous?.value?.accessToken;
+      final nextToken = next.value?.accessToken;
+      // Token đổi từ giá trị A sang B → user đổi tài khoản
+      if (prevToken != null && nextToken != null && prevToken != nextToken) {
+        ref.invalidate(profileProvider);
+        ref.invalidate(friendsListProvider);
+        ref.invalidate(conversationsProvider);
+        ref.invalidate(dioProvider);     // Dio cần re-init với token mới
+        ref.invalidate(tokenProvider);  // Re-read token từ storage
+      }
     });
 
     return PopScope(
