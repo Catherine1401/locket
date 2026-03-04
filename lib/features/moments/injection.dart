@@ -5,6 +5,8 @@ import 'package:locket/features/moments/data/datasources/remote/moment_datasourc
 import 'package:locket/features/moments/data/repositories/moment_repository_impl.dart';
 import 'package:locket/features/moments/domain/repositories/moment_repository.dart';
 import 'package:locket/features/moments/domain/usecases/create_moment_usecase.dart';
+import 'package:locket/features/moments/domain/usecases/get_feed_usecase.dart';
+import 'package:locket/features/moments/domain/usecases/get_grid_usecase.dart';
 
 final momentDatasourceProvider = FutureProvider<MomentDatasource>((ref) async {
   final dio = await ref.read(dioProvider.future);
@@ -20,4 +22,14 @@ final createMomentUseCaseProvider =
     FutureProvider<CreateMomentUseCase>((ref) async {
   final repo = await ref.read(momentRepositoryProvider.future);
   return CreateMomentUseCase(repo);
+});
+
+final getFeedUseCaseProvider = FutureProvider<GetFeedUseCase>((ref) async {
+  final repo = await ref.read(momentRepositoryProvider.future);
+  return GetFeedUseCase(repo);
+});
+
+final getGridUseCaseProvider = FutureProvider<GetGridUseCase>((ref) async {
+  final repo = await ref.read(momentRepositoryProvider.future);
+  return GetGridUseCase(repo);
 });

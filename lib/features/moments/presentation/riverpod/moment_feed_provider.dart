@@ -1,126 +1,213 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:locket/features/moments/domain/entities/moment.dart';
+import 'package:locket/features/moments/domain/entities/moment_page.dart';
+import 'package:locket/features/moments/injection.dart';
 
-// Đây là state object giữ toàn bộ trạng thái của Feed/Grid
+// ── Feed State ────────────────────────────────────────────────────────────────
+
 class MomentFeedState {
   final List<Moment> moments;
   final bool isLoading;
-  final bool isFetchingMore;
+  final bool isLoadingMore;
+  final bool nextEnd;
+  final bool prevEnd;
   final String? nextCursor;
   final String? prevCursor;
+  final String? filterUserId;
   final String? error;
 
   const MomentFeedState({
     this.moments = const [],
     this.isLoading = false,
-    this.isFetchingMore = false,
+    this.isLoadingMore = false,
+    this.nextEnd = true,
+    this.prevEnd = true,
     this.nextCursor,
     this.prevCursor,
+    this.filterUserId,
     this.error,
   });
 
   MomentFeedState copyWith({
     List<Moment>? moments,
     bool? isLoading,
-    bool? isFetchingMore,
+    bool? isLoadingMore,
+    bool? nextEnd,
+    bool? prevEnd,
     String? nextCursor,
     String? prevCursor,
+    String? filterUserId,
     String? error,
-  }) {
-    return MomentFeedState(
-      moments: moments ?? this.moments,
-      isLoading: isLoading ?? this.isLoading,
-      isFetchingMore: isFetchingMore ?? this.isFetchingMore,
-      nextCursor: nextCursor ?? this.nextCursor,
-      prevCursor: prevCursor ?? this.prevCursor,
-      error: error,
-    );
-  }
+    bool clearFilter = false,
+    bool clearError = false,
+    bool clearNextCursor = false,
+  }) =>
+      MomentFeedState(
+        moments: moments ?? this.moments,
+        isLoading: isLoading ?? this.isLoading,
+        isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+        nextEnd: nextEnd ?? this.nextEnd,
+        prevEnd: prevEnd ?? this.prevEnd,
+        nextCursor: clearNextCursor ? null : nextCursor ?? this.nextCursor,
+        prevCursor: prevCursor ?? this.prevCursor,
+        filterUserId: clearFilter ? null : filterUserId ?? this.filterUserId,
+        error: clearError ? null : error ?? this.error,
+      );
 }
 
-class MomentFeedNotifier extends StateNotifier<MomentFeedState> {
-  // Thêm dependency UseCase hoặc Repository ở đây khi cần gọi API
-  MomentFeedNotifier() : super(const MomentFeedState());
+// ── Feed Notifier ─────────────────────────────────────────────────────────────
 
-  // 1. Initial Load: Gọi api /moments/feed lần đầu
+class MomentFeedNotifier extends Notifier<MomentFeedState> {
+  @override
+  MomentFeedState build() {
+    Future.microtask(loadInitial);
+    return const MomentFeedState(isLoading: true);
+  }
+
   Future<void> loadInitial() async {
-    if (state.isLoading) return;
-    state = state.copyWith(isLoading: true, error: null);
-
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
-      // Mock delay
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // TODO: Call API get moments 
-      // final result = await getFeedUseCase.call(limit: 20);
-      
-      state = state.copyWith(
+      final useCase = await ref.read(getFeedUseCaseProvider.future);
+      final page = await useCase.call(filterUserId: state.filterUserId);
+      state = MomentFeedState(
+        moments: page.moments,
         isLoading: false,
-        moments: [], // data từ API
-        nextCursor: 'mock_next_cursor',
-        prevCursor: 'mock_prev_cursor',
+        nextEnd: page.nextEnd,
+        prevEnd: page.prevEnd,
+        nextCursor: page.nextCursor,
+        prevCursor: page.prevCursor,
+        filterUserId: state.filterUserId,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  // 2. Load More (Cuộn xuống): Gọi api truyền nextCursor
   Future<void> loadMore() async {
-    if (state.isFetchingMore || state.nextCursor == null) return;
-    state = state.copyWith(isFetchingMore: true);
-
+    if (state.isLoadingMore || state.nextEnd || state.nextCursor == null) return;
+    state = state.copyWith(isLoadingMore: true);
     try {
-      // TODO: Call API get moments with nextCursor
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final List<Moment> newMoments = []; // data mới
-      
+      final useCase = await ref.read(getFeedUseCaseProvider.future);
+      final page = await useCase.call(
+        nextCursor: state.nextCursor,
+        filterUserId: state.filterUserId,
+      );
       state = state.copyWith(
-        isFetchingMore: false,
-        moments: [...state.moments, ...newMoments],
-        nextCursor: 'new_next_cursor', // update theo API
+        moments: [...state.moments, ...page.moments],
+        isLoadingMore: false,
+        nextEnd: page.nextEnd,
+        nextCursor: page.nextCursor,
       );
     } catch (e) {
-      state = state.copyWith(isFetchingMore: false, error: e.toString());
+      state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }
 
-  // 3. Load Previous (Cuộn lên - ít dùng nếu feed bắt đầu từ mới nhất): Truyền prevCursor
-  Future<void> loadPrevious() async {
-    if (state.isFetchingMore || state.prevCursor == null) return;
-    state = state.copyWith(isFetchingMore: true);
-
-    try {
-      // TODO: Call API get moments with prevCursor
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final List<Moment> oldMoments = []; // data cũ hơn
-      
-      state = state.copyWith(
-        isFetchingMore: false,
-        // Chú ý: prepend data vào trên cùng list
-        moments: [...oldMoments, ...state.moments],
-        prevCursor: 'new_prev_cursor', 
-      );
-    } catch (e) {
-      state = state.copyWith(isFetchingMore: false, error: e.toString());
-    }
+  Future<void> setFilter(String? userId) async {
+    state = MomentFeedState(isLoading: true, filterUserId: userId);
+    await loadInitial();
   }
 
-  // Tiện ích để thêm moment mới do chính user vừa post
-  void appendNewMoment(Moment moment) {
-    state = state.copyWith(
-      moments: [moment, ...state.moments],
-    );
+  void prepend(Moment moment) {
+    state = state.copyWith(moments: [moment, ...state.moments]);
   }
 }
 
-// Global Provider
 final momentFeedProvider =
-    StateNotifierProvider<MomentFeedNotifier, MomentFeedState>((ref) {
-  return MomentFeedNotifier();
-});
+    NotifierProvider<MomentFeedNotifier, MomentFeedState>(
+  MomentFeedNotifier.new,
+);
+
+// ── Grid State ────────────────────────────────────────────────────────────────
+
+class GridState {
+  final List<GridMoment> moments;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final bool nextEnd;
+  final String? nextCursor;
+  final String? filterUserId;
+
+  const GridState({
+    this.moments = const [],
+    this.isLoading = false,
+    this.isLoadingMore = false,
+    this.nextEnd = true,
+    this.nextCursor,
+    this.filterUserId,
+  });
+
+  GridState copyWith({
+    List<GridMoment>? moments,
+    bool? isLoading,
+    bool? isLoadingMore,
+    bool? nextEnd,
+    String? nextCursor,
+    String? filterUserId,
+    bool clearNextCursor = false,
+  }) =>
+      GridState(
+        moments: moments ?? this.moments,
+        isLoading: isLoading ?? this.isLoading,
+        isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+        nextEnd: nextEnd ?? this.nextEnd,
+        nextCursor: clearNextCursor ? null : nextCursor ?? this.nextCursor,
+        filterUserId: filterUserId ?? this.filterUserId,
+      );
+}
+
+// ── Grid Notifier ─────────────────────────────────────────────────────────────
+
+class GridNotifier extends Notifier<GridState> {
+  @override
+  GridState build() {
+    Future.microtask(loadInitial);
+    return const GridState(isLoading: true);
+  }
+
+  Future<void> loadInitial() async {
+    state = state.copyWith(isLoading: true);
+    try {
+      final useCase = await ref.read(getGridUseCaseProvider.future);
+      final page = await useCase.call(filterUserId: state.filterUserId);
+      state = GridState(
+        moments: page.moments,
+        isLoading: false,
+        nextEnd: page.nextEnd,
+        nextCursor: page.nextCursor,
+        filterUserId: state.filterUserId,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (state.isLoadingMore || state.nextEnd || state.nextCursor == null) return;
+    state = state.copyWith(isLoadingMore: true);
+    try {
+      final useCase = await ref.read(getGridUseCaseProvider.future);
+      final page = await useCase.call(
+        nextCursor: state.nextCursor,
+        filterUserId: state.filterUserId,
+      );
+      state = state.copyWith(
+        moments: [...state.moments, ...page.moments],
+        isLoadingMore: false,
+        nextEnd: page.nextEnd,
+        nextCursor: page.nextCursor,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMore: false);
+    }
+  }
+
+  Future<void> setFilter(String? userId) async {
+    state = GridState(isLoading: true, filterUserId: userId);
+    await loadInitial();
+  }
+}
+
+final gridProvider = NotifierProvider<GridNotifier, GridState>(
+  GridNotifier.new,
+);

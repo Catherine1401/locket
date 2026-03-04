@@ -7,9 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:locket/core/injection.dart';
 import 'package:locket/core/theme/colors.dart';
-import 'package:locket/features/friends/domain/entities/friend.dart';
-import 'package:locket/features/friends/domain/usecases/get_friends_usecase.dart';
 import 'package:locket/features/friends/injection.dart';
+import 'package:locket/features/moments/presentation/screens/feed_screen.dart';
 import 'package:locket/features/moments/presentation/screens/moment_preview_screen.dart';
 import 'package:locket/features/users/presentation/riverpod/profile_provider.dart';
 
@@ -35,93 +34,104 @@ class CameraScreen extends HookConsumerWidget {
           SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     }, []);
 
+    void _openFeed() => Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const FeedScreen()),
+    );
+
     return Scaffold(
       backgroundColor: MyColors.cameraBackground,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // ── Header (avatar, bạn bè, chat) ──────────────────────
-            _TopBar(
-              friendCount: ref.watch(friendsListProvider).value?.length ?? 0,
-              avatarUrl: ref.watch(profileProvider).value?.avatarUrl,
-              onAvatarTap: () => ref.read(rootPageControllerProvider).animateToPage(
-                0,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
+      body: GestureDetector(
+        // Vuốt lên bất kỳ đâu → mở FeedScreen
+        onVerticalDragEnd: (details) {
+          if ((details.primaryVelocity ?? 0) < -300) _openFeed();
+        },
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // ── Header (avatar, bạn bè, chat) ──────────────────────
+              _TopBar(
+                friendCount: ref.watch(friendsListProvider).value?.length ?? 0,
+                avatarUrl: ref.watch(profileProvider).value?.avatarUrl,
+                onAvatarTap: () => ref.read(rootPageControllerProvider).animateToPage(
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                ),
               ),
-            ),
 
-            // Khối camera + controls được canh giữa theo chiều dọc
-            Expanded(
-              child: Column(
-                children: [
-                  const Spacer(),
+              // Khối camera + controls được canh giữa theo chiều dọc
+              Expanded(
+                child: Column(
+                  children: [
+                    const Spacer(),
 
-                  // ── Viewfinder 1:1 ────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: _Viewfinder(
-                        controller: controller.value,
-                        isInitialized: isInitialized.value,
-                        isFlashOn: isFlashOn.value,
-                        onFlashToggle: () async {
-                          isFlashOn.value = !isFlashOn.value;
-                          await controller.value?.setFlashMode(
-                            isFlashOn.value
-                                ? FlashMode.torch
-                                : FlashMode.off,
-                          );
-                        },
+                    // ── Viewfinder 1:1 ────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: _Viewfinder(
+                          controller: controller.value,
+                          isInitialized: isInitialized.value,
+                          isFlashOn: isFlashOn.value,
+                          onFlashToggle: () async {
+                            isFlashOn.value = !isFlashOn.value;
+                            await controller.value?.setFlashMode(
+                              isFlashOn.value
+                                  ? FlashMode.torch
+                                  : FlashMode.off,
+                            );
+                          },
+                        ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 32),
+                    const SizedBox(height: 32),
 
-                  // ── Controls ──────────────────────────────────────
-                  _ControlsBar(
-                    onShutter: () async {
-                      if (controller.value == null || !isInitialized.value) {
-                        return;
-                      }
-                      try {
-                        final image = await controller.value!.takePicture();
-                        if (context.mounted) {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => MomentPreviewScreen(
-                                imagePath: image.path,
-                              ),
-                            ),
-                          );
+                    // ── Controls ──────────────────────────────────────
+                    _ControlsBar(
+                      onShutter: () async {
+                        if (controller.value == null || !isInitialized.value) {
+                          return;
                         }
-                      } catch (e) {
-                        debugPrint('Shutter error: $e');
-                      }
-                    },
-                    onFlip: () async {
-                      if (cameras.value.length < 2) return;
-                      isFrontCamera.value = !isFrontCamera.value;
-                      await _switchCamera(
-                        cameras.value,
-                        controller,
-                        isInitialized,
-                        isFrontCamera.value,
-                      );
-                    },
-                  ),
+                        try {
+                          final image = await controller.value!.takePicture();
+                          if (context.mounted) {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => MomentPreviewScreen(
+                                  imagePath: image.path,
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          debugPrint('Shutter error: $e');
+                        }
+                      },
+                      onFlip: () async {
+                        if (cameras.value.length < 2) return;
+                        isFrontCamera.value = !isFrontCamera.value;
+                        await _switchCamera(
+                          cameras.value,
+                          controller,
+                          isInitialized,
+                          isFrontCamera.value,
+                        );
+                      },
+                      onGrid: _openFeed,
+                    ),
 
-                  const Spacer(),
-                ],
+                    const Spacer(),
+                  ],
+                ),
               ),
-            ),
 
-            // ── Footer luôn sát đáy ────────────────────────────────
-            const _Footer(),
-          ],
+              // ── Footer luôn sát đáy ────────────────────────────────
+              const _Footer(),
+            ],
+          ),
         ),
       ),
     );
@@ -417,10 +427,12 @@ class _Viewfinder extends StatelessWidget {
 class _ControlsBar extends StatelessWidget {
   final VoidCallback onShutter;
   final VoidCallback onFlip;
+  final VoidCallback? onGrid;
 
   const _ControlsBar({
     required this.onShutter,
     required this.onFlip,
+    this.onGrid,
   });
 
   @override
@@ -431,10 +443,24 @@ class _ControlsBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(width: 40),
-          const SizedBox(width: 60),
+          // Grid / media icon (trái)
+          GestureDetector(
+            onTap: onGrid,
+            child: Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.image_outlined,
+                color: MyColors.white,
+                size: 30,
+              ),
+            ),
+          ),
 
-          // Shutter — 3 layers: vàng → khoảng đen (mỏng hơn) → lõi trắng
+          const SizedBox(width: 32),
+
+          // Shutter — 3 layers: vàng → khoảng đen → lõi trắng
           GestureDetector(
             onTap: onShutter,
             child: Container(
@@ -471,15 +497,20 @@ class _ControlsBar extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(width: 60),
+          const SizedBox(width: 32),
 
-          // Flip — icon xoay camera, thu nhỏ lại
+          // Flip — icon xoay camera
           GestureDetector(
             onTap: onFlip,
-            child: const Icon(
-              Icons.flip_camera_ios,
-              size: 36,
-              color: MyColors.white,
+            child: Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.flip_camera_ios,
+                size: 30,
+                color: MyColors.white,
+              ),
             ),
           ),
         ],
@@ -501,7 +532,6 @@ class _Footer extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 8),
-          // Pill "9 Lịch sử"
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
@@ -540,13 +570,8 @@ class _Footer extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 8),
-          // Arrow chevron xuống
-          const Icon(
-            Icons.expand_more,
-            color: MyColors.white,
-            size: 20,
-          ),
+          const SizedBox(height: 6),
+          const Icon(Icons.expand_more, color: MyColors.white, size: 20),
           const SizedBox(height: 10),
         ],
       ),
