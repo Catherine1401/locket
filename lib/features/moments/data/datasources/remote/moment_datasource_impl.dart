@@ -60,11 +60,11 @@ final class MomentDatasourceImpl implements MomentDatasource {
   // ── Feed ─────────────────────────────────────────────────────────────────────
 
   @override
-  Future<MomentPage> getFeed({String? nextCursor}) async {
+  Future<MomentPage> getFeed({String? nextCursor, String? prevCursor}) async {
     try {
       final response = await _dio.get(
         '/moments/feed',
-        queryParameters: _query(nextCursor: nextCursor),
+        queryParameters: _query(nextCursor: nextCursor, prevCursor: prevCursor),
       );
       return _parseFeedResponse(response);
     } catch (e) {
@@ -74,11 +74,11 @@ final class MomentDatasourceImpl implements MomentDatasource {
   }
 
   @override
-  Future<MomentPage> getFeedByUser(String userId, {String? nextCursor}) async {
+  Future<MomentPage> getFeedByUser(String userId, {String? nextCursor, String? prevCursor}) async {
     try {
       final response = await _dio.get(
         '/users/$userId/moments/feed',
-        queryParameters: _query(nextCursor: nextCursor),
+        queryParameters: _query(nextCursor: nextCursor, prevCursor: prevCursor),
       );
       return _parseFeedResponse(response);
     } catch (e) {
@@ -88,11 +88,11 @@ final class MomentDatasourceImpl implements MomentDatasource {
   }
 
   @override
-  Future<MomentPage> getMyFeed({String? nextCursor}) async {
+  Future<MomentPage> getMyFeed({String? nextCursor, String? prevCursor}) async {
     try {
       final response = await _dio.get(
         '/moments/me/feed',
-        queryParameters: _query(nextCursor: nextCursor),
+        queryParameters: _query(nextCursor: nextCursor, prevCursor: prevCursor),
       );
       return _parseFeedResponse(response);
     } catch (e) {

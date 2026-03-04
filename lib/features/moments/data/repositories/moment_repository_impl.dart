@@ -12,16 +12,16 @@ final class MomentRepositoryImpl implements MomentRepository {
       _datasource.createMoment(filePath, caption);
 
   @override
-  Future<MomentPage> getFeed({String? nextCursor}) =>
-      _datasource.getFeed(nextCursor: nextCursor);
+  Future<MomentPage> getFeed({String? nextCursor, String? prevCursor}) =>
+      _datasource.getFeed(nextCursor: nextCursor, prevCursor: prevCursor);
 
   @override
-  Future<MomentPage> getFeedByUser(String userId, {String? nextCursor}) =>
-      _datasource.getFeedByUser(userId, nextCursor: nextCursor);
+  Future<MomentPage> getFeedByUser(String userId, {String? nextCursor, String? prevCursor}) =>
+      _datasource.getFeedByUser(userId, nextCursor: nextCursor, prevCursor: prevCursor);
 
   @override
-  Future<MomentPage> getMyFeed({String? nextCursor}) =>
-      _datasource.getMyFeed(nextCursor: nextCursor);
+  Future<MomentPage> getMyFeed({String? nextCursor, String? prevCursor}) =>
+      _datasource.getMyFeed(nextCursor: nextCursor, prevCursor: prevCursor);
 
   @override
   Future<GridPage> getGrid({String? nextCursor}) =>

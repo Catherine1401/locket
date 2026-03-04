@@ -10,14 +10,22 @@ import 'package:locket/features/moments/presentation/screens/grid_screen.dart';
 import 'package:locket/features/users/presentation/riverpod/profile_provider.dart';
 
 class FeedScreen extends ConsumerStatefulWidget {
-  const FeedScreen({super.key});
+  final String? initialMomentId;
+  const FeedScreen({super.key, this.initialMomentId});
 
   @override
   ConsumerState<FeedScreen> createState() => _FeedScreenState();
 }
 
 class _FeedScreenState extends ConsumerState<FeedScreen> {
-  final _pageController = PageController();
+  late final PageController _pageController;
+  bool _hasJumpedToInitial = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
 
   @override
   void dispose() {
@@ -44,7 +52,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
           child: Column(
             children: [
               // ── Top Bar ─────────────────────────────────────────────
-              _FeedTopBar(
+              FeedTopBar(
                 filterUserId: feedState.filterUserId,
                 friends: friends,
                 myAvatarUrl: ref.watch(profileProvider).value?.avatarUrl,
@@ -60,7 +68,21 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                             color: MyColors.bgButtonLogin, strokeWidth: 2))
                     : feedState.moments.isEmpty
                         ? const _EmptyFeed()
-                        : NotificationListener<ScrollNotification>(
+                        : Builder(
+                            builder: (context) {
+                              if (!_hasJumpedToInitial && widget.initialMomentId != null) {
+                                final initPage = feedState.moments.indexWhere(
+                                    (m) => m.id == widget.initialMomentId);
+                                if (initPage > 0) {
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    if (_pageController.hasClients) {
+                                      _pageController.jumpToPage(initPage);
+                                    }
+                                  });
+                                }
+                                _hasJumpedToInitial = true;
+                              }
+                              return NotificationListener<ScrollNotification>(
                             onNotification: (n) {
                               if (n is ScrollEndNotification) {
                                 final page = _pageController.page?.round() ?? 0;
@@ -104,7 +126,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                                 );
                               },
                             ),
-                          ),
+                          );
+                        },
+                      ),
               ),
 
               // ── Bottom Nav ─────────────────────────────────────────
@@ -351,13 +375,13 @@ class _EmptyFeed extends StatelessWidget {
 
 // ── Top Bar ───────────────────────────────────────────────────────────────────
 
-class _FeedTopBar extends ConsumerWidget {
+class FeedTopBar extends ConsumerWidget {
   final String? filterUserId;
   final List<Friend> friends;
   final String? myAvatarUrl;
   final ValueChanged<String?> onFilterChanged;
 
-  const _FeedTopBar({
+  const FeedTopBar({
     required this.filterUserId,
     required this.friends,
     this.myAvatarUrl,

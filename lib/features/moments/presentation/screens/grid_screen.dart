@@ -2,9 +2,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:locket/core/theme/colors.dart';
+import 'package:locket/features/friends/injection.dart';
 import 'package:locket/features/moments/domain/entities/moment_page.dart';
 import 'package:locket/features/moments/presentation/riverpod/moment_feed_provider.dart';
 import 'package:locket/features/moments/presentation/screens/feed_screen.dart';
+import 'package:locket/features/users/presentation/riverpod/profile_provider.dart';
 
 class GridScreen extends ConsumerStatefulWidget {
   const GridScreen({super.key});
@@ -19,7 +21,6 @@ class _GridScreenState extends ConsumerState<GridScreen> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
   }
 
   @override
@@ -28,16 +29,11 @@ class _GridScreenState extends ConsumerState<GridScreen> {
     super.dispose();
   }
 
-  void _onScroll() {
-    final pos = _scrollController.position;
-    if (pos.pixels >= pos.maxScrollExtent - 300) {
-      ref.read(gridProvider.notifier).loadMore();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final gridState = ref.watch(gridProvider);
+    final friends = ref.watch(friendsListProvider).value ?? [];
+    final myAvatarUrl = ref.watch(profileProvider).value?.avatarUrl;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -45,89 +41,134 @@ class _GridScreenState extends ConsumerState<GridScreen> {
         child: Column(
           children: [
             // ── Top Bar ─────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const SizedBox(width: 44),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white12,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Mọi người',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600)),
-                        SizedBox(width: 4),
-                        Icon(Icons.keyboard_arrow_down,
-                            color: Colors.white, size: 18),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white12,
-                      borderRadius: BorderRadius.circular(22),
-                    ),
-                    child: const Icon(Icons.chat_bubble_rounded,
-                        color: Colors.white, size: 20),
-                  ),
-                ],
-              ),
+            FeedTopBar(
+              filterUserId: gridState.filterUserId,
+              friends: friends,
+              myAvatarUrl: myAvatarUrl,
+              onFilterChanged: (userId) =>
+                  ref.read(gridProvider.notifier).setFilter(userId),
             ),
 
             // ── Grid ─────────────────────────────────────────────────
             Expanded(
-              child: gridState.isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                          color: MyColors.bgButtonLogin, strokeWidth: 2))
-                  : gridState.moments.isEmpty
+              child: Stack(
+                children: [
+                  gridState.isLoading
                       ? const Center(
-                          child: Text('Chưa có khoảnh khắc nào',
-                              style: TextStyle(color: Colors.white60)))
-                      : GridView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.all(2),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 2,
-                            mainAxisSpacing: 2,
-                            childAspectRatio: 1,
-                          ),
-                          itemCount: gridState.moments.length,
-                          itemBuilder: (context, index) {
-                            final item = gridState.moments[index];
-                            return _GridTile(
-                              item: item,
-                              onTap: () => _openFeedAt(context, item),
-                            );
+                          child: CircularProgressIndicator(
+                              color: MyColors.bgButtonLogin, strokeWidth: 2))
+                      : gridState.moments.isEmpty
+                          ? const Center(
+                              child: Text('Chưa có khoảnh khắc nào',
+                                  style: TextStyle(color: Colors.white60)))
+                          : NotificationListener<ScrollNotification>(
+                              onNotification: (n) {
+                                if (n is ScrollEndNotification) {
+                                  if (_scrollController.position.maxScrollExtent > 0 && 
+                                      _scrollController.position.pixels >=
+                                          _scrollController.position.maxScrollExtent -
+                                              300) {
+                                    ref.read(gridProvider.notifier).loadMore();
+                                  }
+                                } else if (n is OverscrollNotification) {
+                                  if (n.overscroll < -10 || n.overscroll > 10) {
+                                    if (Navigator.of(context).canPop()) {
+                                      Navigator.of(context).pop();
+                                    }
+                                  }
+                                }
+                                return false;
+                              },
+                              child: GridView.builder(
+                                physics: const AlwaysScrollableScrollPhysics(
+                                    parent: BouncingScrollPhysics()),
+                                controller: _scrollController,
+                                padding: const EdgeInsets.only(top: 10, bottom: 100), // Không padding 2 bên, nhường chỗ cho nút ở đáy
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: 8,
+                                  mainAxisSpacing: 8,
+                                  childAspectRatio: 1,
+                                ),
+                                itemCount: gridState.moments.length,
+                                itemBuilder: (context, index) {
+                                  final item = gridState.moments[index];
+                                  return _GridTile(
+                                    item: item,
+                                    onTap: () => _openFeedAt(context, item),
+                                  );
+                                },
+                              ),
+                            ),
+
+                  // ── Floating Camera Nav ────────────────────────────────
+                  Positioned(
+                    bottom: 24,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(width: 48 + 32), // Cân bằng không gian với nút phải
+                        // Nút camera giữa
+                        GestureDetector(
+                          onTap: () {
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            } else {
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(builder: (_) => const FeedScreen()),
+                              );
+                            }
                           },
+                          child: Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.transparent,
+                              border: Border.all(
+                                  color: MyColors.bgButtonLogin, width: 4),
+                            ),
+                            child: Center(
+                              child: Container(
+                                width: 52,
+                                height: 52,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.black26, 
+                                ),
+                                child: Center(
+                                  child: Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-            ),
-
-            if (gridState.isLoadingMore)
-              const Padding(
-                padding: EdgeInsets.all(8),
-                child: CircularProgressIndicator(
-                    color: MyColors.bgButtonLogin, strokeWidth: 2),
-              ),
-
-            // ── Bottom Nav ─────────────────────────────────────────
-            _GridBottomNav(
-              onFeedTap: () => Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const FeedScreen()),
+                        const SizedBox(width: 32),
+                        // Nút video phụ bên phải
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.15),
+                          ),
+                          child: const Icon(Icons.video_collection_rounded,
+                              color: Colors.white70, size: 22),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -137,10 +178,9 @@ class _GridScreenState extends ConsumerState<GridScreen> {
   }
 
   void _openFeedAt(BuildContext context, GridMoment item) {
-    // Invalidate feed provider để force reload từ moment này
-    ref.invalidate(momentFeedProvider);
+    ref.read(momentFeedProvider.notifier).loadInitial(initialMomentId: item.id);
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const FeedScreen()),
+      MaterialPageRoute(builder: (_) => FeedScreen(initialMomentId: item.id)),
     );
   }
 }
@@ -156,83 +196,24 @@ class _GridTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: item.thumbnail != null
-          ? CachedNetworkImage(
-              imageUrl: item.thumbnail!,
-              fit: BoxFit.cover,
-              placeholder: (_, __) =>
-                  const ColoredBox(color: Colors.black26),
-              errorWidget: (_, __, ___) =>
-                  const ColoredBox(color: Colors.black12),
-            )
-          : const ColoredBox(
-              color: Colors.black26,
-              child: Icon(Icons.image_not_supported_outlined,
-                  color: Colors.white38, size: 24),
-            ),
-    );
-  }
-}
-
-// ── Bottom Nav ─────────────────────────────────────────────────────────────────
-
-class _GridBottomNav extends StatelessWidget {
-  final VoidCallback? onFeedTap;
-  const _GridBottomNav({this.onFeedTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 60,
-      color: Colors.black,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          // Grid icon (active)
-          GestureDetector(
-            onTap: null,
-            child: const Icon(Icons.grid_view_rounded,
-                color: Colors.white, size: 28),
-          ),
-
-          // Camera button → back/feed
-          GestureDetector(
-            onTap: onFeedTap,
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.transparent,
-                border: Border.all(color: MyColors.bgButtonLogin, width: 3),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20), // Ảnh bo tròn đẹp theo UI
+        child: item.thumbnail != null
+            ? CachedNetworkImage(
+                imageUrl: item.thumbnail!,
+                fit: BoxFit.cover,
+                placeholder: (_, __) =>
+                    const ColoredBox(color: Color(0xFF1E1E1E)),
+                errorWidget: (_, __, ___) =>
+                    const ColoredBox(color: Color(0xFF1E1E1E)),
+              )
+            : const ColoredBox(
+                color: Color(0xFF1E1E1E),
+                child: Icon(Icons.image_not_supported_outlined,
+                    color: Colors.white38, size: 24),
               ),
-              child: Center(
-                child: Container(
-                  width: 46,
-                  height: 46,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.black,
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Share icon
-          const Icon(Icons.ios_share, color: Colors.white54, size: 26),
-        ],
       ),
     );
   }
 }
+

@@ -64,11 +64,15 @@ class MomentFeedNotifier extends Notifier<MomentFeedState> {
     return const MomentFeedState(isLoading: true);
   }
 
-  Future<void> loadInitial() async {
+  Future<void> loadInitial({String? initialMomentId}) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final useCase = await ref.read(getFeedUseCaseProvider.future);
-      final page = await useCase.call(filterUserId: state.filterUserId);
+      final page = await useCase.call(
+        filterUserId: state.filterUserId,
+        nextCursor: initialMomentId,
+        prevCursor: initialMomentId,
+      );
       state = MomentFeedState(
         moments: page.moments,
         isLoading: false,

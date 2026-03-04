@@ -5,10 +5,10 @@ class GetFeedUseCase {
   final MomentRepository _repo;
   GetFeedUseCase(this._repo);
 
-  Future<MomentPage> call({String? nextCursor, String? filterUserId}) {
+  Future<MomentPage> call({String? nextCursor, String? prevCursor, String? filterUserId}) {
     if (filterUserId != null) {
-      return _repo.getFeedByUser(filterUserId, nextCursor: nextCursor);
+      return _repo.getFeedByUser(filterUserId, nextCursor: nextCursor, prevCursor: prevCursor);
     }
-    return _repo.getFeed(nextCursor: nextCursor);
+    return _repo.getFeed(nextCursor: nextCursor, prevCursor: prevCursor);
   }
 }
