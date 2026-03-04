@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:locket/core/injection.dart';
 import 'package:locket/core/theme/colors.dart';
 import 'package:locket/features/users/presentation/riverpod/profile_provider.dart';
 import 'package:locket/shared/presentation/widgets/error.dart';
@@ -29,7 +30,13 @@ class ProfileAppbar extends ConsumerWidget {
             actions: <Widget>[
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () {},
+                onTap: () {
+                  ref.read(rootPageControllerProvider).animateToPage(
+                        1,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                },
                 child: SvgPicture.asset(
                   'assets/icons/forward.svg',
                   width: 20,
