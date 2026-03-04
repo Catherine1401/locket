@@ -17,6 +17,18 @@ class RootScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pageController = ref.watch(rootPageControllerProvider);
 
+    // Kết nối Socket.IO với access token khi người dùng đã authenticated
+    ref.listen(tokenProvider, (_, tokenAsync) {
+      tokenAsync.whenData((token) {
+        if (token.accessToken != null && token.accessToken!.isNotEmpty) {
+          final socketService = ref.read(socketServiceProvider);
+          if (!socketService.isConnected) {
+            socketService.connect(host, token.accessToken!);
+          }
+        }
+      });
+    });
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {

@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:locket/core/config/token.dart';
+import 'package:locket/core/network/socket_service.dart';
 import 'package:locket/core/network/token_queuedinterceptor.dart';
 import 'package:locket/core/utils/auth_event_bus.dart';
 import 'package:locket/features/users/presentation/riverpod/auth_state_provider.dart';
@@ -59,6 +60,13 @@ final dioProvider = FutureProvider<Dio>((ref) async {
   return dio;
 });
 
+// socket service provider
+final socketServiceProvider = Provider<SocketService>((ref) {
+  final service = SocketService();
+  ref.onDispose(service.disconnect);
+  return service;
+});
+
 // page controller cho swipe navigation camera ↔ profile
 final rootPageControllerProvider = Provider<PageController>((ref) {
   final ctrl = PageController(initialPage: 1); // camera = page 1 (default)
@@ -96,7 +104,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
     redirect: (_, state) async {
-      print("redirect");
+      debugPrint("redirect");
       final authState = await ref.watch(authStateProvider.future);
       if (!authState && state.uri.path != '/login') {
         return '/login';

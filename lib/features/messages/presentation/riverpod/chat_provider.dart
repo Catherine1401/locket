@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:locket/core/injection.dart';
 import 'package:locket/features/messages/domain/entities/message.dart';
 import 'package:locket/features/messages/injection.dart';
 
@@ -44,6 +47,8 @@ class ChatState {
 // ── Notifier ─────────────────────────────────────────────────────────────────
 
 class ChatNotifier extends Notifier<ChatState> {
+  StreamSubscription<Message>? _socketSub;
+
   @override
   ChatState build() => const ChatState();
 
@@ -58,9 +63,35 @@ class ChatNotifier extends Notifier<ChatState> {
         nextCursor: result.nextCursor,
         hasMore: result.nextCursor != null,
       );
+
+      // ── Kết nối Socket.IO và lắng nghe tin nhắn mới ──────────────────
+      _joinSocketRoom(conversationId);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  /// Join socket room và subscribe vào stream new_message
+  void _joinSocketRoom(String conversationId) {
+    _socketSub?.cancel();
+
+    final socketService = ref.read(socketServiceProvider);
+    socketService.joinConversation(conversationId);
+
+    _socketSub = socketService.onNewMessage().listen((newMessage) {
+      // Tránh duplicate nếu chính người dùng này đã append message trong sendMessage()
+      final isDuplicate = state.messages.any((m) => m.id == newMessage.id);
+      if (!isDuplicate) {
+        state = state.copyWith(messages: [...state.messages, newMessage]);
+      }
+    });
+  }
+
+  /// Huỷ socket subscription khi rời khỏi màn hình
+  void leaveRoom(String conversationId) {
+    _socketSub?.cancel();
+    _socketSub = null;
+    ref.read(socketServiceProvider).leaveConversation(conversationId);
   }
 
   Future<void> loadMore(String conversationId) async {
@@ -89,6 +120,8 @@ class ChatNotifier extends Notifier<ChatState> {
     try {
       final useCase = await ref.read(sendMessageUseCaseProvider.future);
       final message = await useCase.call(conversationId, content, replyToMomentId: replyToMomentId);
+      // Append message của người gửi ngay lập tức (optimistic update)
+      // Socket event sẽ được lọc duplicate bằng message.id
       state = state.copyWith(messages: [...state.messages, message]);
     } catch (e) {
       state = state.copyWith(error: e.toString());
