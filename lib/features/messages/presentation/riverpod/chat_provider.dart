@@ -89,9 +89,13 @@ class ChatNotifier extends Notifier<ChatState> {
     _socketSub?.cancel();
 
     final socketService = ref.read(socketServiceProvider);
+    // Join conversation room để backend biết emit về đây
     socketService.joinConversation(conversationId);
 
-    _socketSub = socketService.onNewMessage().listen((newMessage) {
+    // Subscribe global message stream, filter theo conversationId
+    _socketSub = socketService.messageStream
+        .where((msg) => msg.conversationId == conversationId)
+        .listen((newMessage) {
       // Tránh duplicate nếu chính người dùng này đã append message trong sendMessage()
       final isDuplicate = state.messages.any((m) => m.id == newMessage.id);
       if (!isDuplicate) {

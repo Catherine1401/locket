@@ -34,7 +34,7 @@ final class ConversationsNotifier
 
     final socketService = ref.read(socketServiceProvider);
 
-    _socketSub = socketService.onNewMessage().listen((newMessage) {
+    _socketSub = socketService.messageStream.listen((newMessage) {
       final current = state.value;
       if (current == null) return;
 
