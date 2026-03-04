@@ -54,6 +54,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           _outgoingRequests = results[2] as List<FriendRequest>;
           _isLoading = false;
         });
+        // Invalidate để profile screen tự cập nhật số bạn bè
+        ref.invalidate(friendsListProvider);
       }
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
