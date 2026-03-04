@@ -4,6 +4,7 @@ final class Profile {
   final String displayName;
   final String avatarUrl;
   final String? birthday;
+  final String? shareCode;
 
   const Profile({
     required this.id,
@@ -11,6 +12,7 @@ final class Profile {
     required this.displayName,
     required this.avatarUrl,
     required this.birthday,
+    this.shareCode,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) => Profile(
@@ -19,6 +21,7 @@ final class Profile {
     displayName: json['displayName'],
     avatarUrl: json['avatarUrl'],
     birthday: json['birthday'],
+    shareCode: json['shareCode'],
   );
 
   Profile copyWith({
@@ -27,6 +30,7 @@ final class Profile {
     String? displayName,
     String? avatarUrl,
     String? birthday,
+    String? shareCode,
   }) {
     return Profile(
       id: id ?? this.id,
@@ -34,11 +38,12 @@ final class Profile {
       displayName: displayName ?? this.displayName,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       birthday: birthday ?? this.birthday,
+      shareCode: shareCode ?? this.shareCode,
     );
   }
 
   @override
   String toString() {
-    return 'Profile{id: $id, email: $email, displayName: $displayName, avatarUrl: $avatarUrl, birthday: $birthday}';
+    return 'Profile{id: $id, email: $email, displayName: $displayName, avatarUrl: $avatarUrl, birthday: $birthday, shareCode: $shareCode}';
   }
 }

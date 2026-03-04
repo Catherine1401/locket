@@ -1,5 +1,6 @@
 import 'package:locket/features/friends/data/datasources/remote/friend_datasource.dart';
 import 'package:locket/features/friends/domain/entities/friend.dart';
+import 'package:locket/features/friends/domain/entities/friend_request.dart';
 import 'package:locket/features/friends/domain/repositories/friend_repository.dart';
 
 final class FriendRepositoryImpl implements FriendRepository {
@@ -18,11 +19,11 @@ final class FriendRepositoryImpl implements FriendRepository {
       _datasource.sendFriendRequest(toUserId);
 
   @override
-  Future<List<dynamic>> getIncomingRequests() =>
+  Future<List<FriendRequest>> getIncomingRequests() =>
       _datasource.getIncomingRequests();
 
   @override
-  Future<List<dynamic>> getOutgoingRequests() =>
+  Future<List<FriendRequest>> getOutgoingRequests() =>
       _datasource.getOutgoingRequests();
 
   @override

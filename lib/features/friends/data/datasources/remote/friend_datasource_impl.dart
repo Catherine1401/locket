@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:locket/features/friends/data/datasources/remote/friend_datasource.dart';
 import 'package:locket/features/friends/domain/entities/friend.dart';
+import 'package:locket/features/friends/domain/entities/friend_request.dart';
 
 final class FriendDatasourceImpl implements FriendDatasource {
   final Dio _dio;
@@ -52,11 +53,12 @@ final class FriendDatasourceImpl implements FriendDatasource {
   }
 
   @override
-  Future<List<dynamic>> getIncomingRequests() async {
+  Future<List<FriendRequest>> getIncomingRequests() async {
     try {
       final response = await _dio.get('/friend-requests/incoming');
       if (response.statusCode == 200) {
-        return response.data as List<dynamic>;
+        final list = response.data as List<dynamic>;
+        return list.map((e) => FriendRequest.fromJson(e as Map<String, dynamic>)).toList();
       }
       return [];
     } catch (e) {
@@ -66,11 +68,12 @@ final class FriendDatasourceImpl implements FriendDatasource {
   }
 
   @override
-  Future<List<dynamic>> getOutgoingRequests() async {
+  Future<List<FriendRequest>> getOutgoingRequests() async {
     try {
       final response = await _dio.get('/friend-requests/outgoing');
       if (response.statusCode == 200) {
-        return response.data as List<dynamic>;
+        final list = response.data as List<dynamic>;
+        return list.map((e) => FriendRequest.fromJson(e as Map<String, dynamic>)).toList();
       }
       return [];
     } catch (e) {

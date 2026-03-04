@@ -3,6 +3,7 @@ import 'package:locket/core/injection.dart';
 import 'package:locket/features/friends/data/datasources/remote/friend_datasource.dart';
 import 'package:locket/features/friends/data/datasources/remote/friend_datasource_impl.dart';
 import 'package:locket/features/friends/data/repositories/friend_repository_impl.dart';
+import 'package:locket/features/friends/domain/entities/friend.dart';
 import 'package:locket/features/friends/domain/repositories/friend_repository.dart';
 import 'package:locket/features/friends/domain/usecases/get_friends_usecase.dart';
 import 'package:locket/features/friends/domain/usecases/get_user_by_sharecode_usecase.dart';
@@ -69,4 +70,11 @@ final removeFriendUseCaseProvider =
     FutureProvider<RemoveFriendUseCase>((ref) async {
   final repo = await ref.read(friendRepositoryProvider.future);
   return RemoveFriendUseCase(repo);
+});
+
+/// Cached list of friends — dùng ref.watch(friendsListProvider) thay vì
+/// FutureBuilder(future: useCase.call()) để tránh infinite rebuild.
+final friendsListProvider = FutureProvider<List<Friend>>((ref) async {
+  final useCase = await ref.read(getFriendsUseCaseProvider.future);
+  return useCase.call();
 });

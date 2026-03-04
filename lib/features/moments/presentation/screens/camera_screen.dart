@@ -7,6 +7,9 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:locket/core/injection.dart';
 import 'package:locket/core/theme/colors.dart';
+import 'package:locket/features/friends/domain/entities/friend.dart';
+import 'package:locket/features/friends/domain/usecases/get_friends_usecase.dart';
+import 'package:locket/features/friends/injection.dart';
 import 'package:locket/features/moments/presentation/screens/moment_preview_screen.dart';
 import 'package:locket/features/users/presentation/riverpod/profile_provider.dart';
 
@@ -40,7 +43,7 @@ class CameraScreen extends HookConsumerWidget {
           children: [
             // ── Header (avatar, bạn bè, chat) ──────────────────────
             _TopBar(
-              hasFriends: false,
+              friendCount: ref.watch(friendsListProvider).value?.length ?? 0,
               avatarUrl: ref.watch(profileProvider).value?.avatarUrl,
               onAvatarTap: () => ref.read(rootPageControllerProvider).animateToPage(
                 0,
@@ -170,14 +173,14 @@ class CameraScreen extends HookConsumerWidget {
 
 // ─── Top Bar ──────────────────────────────────────────────────────────────────
 
-class _TopBar extends StatelessWidget {
-  final bool hasFriends;
+class _TopBar extends ConsumerWidget {
+  final int friendCount;
   final String? avatarUrl;
   final VoidCallback? onAvatarTap;
-  const _TopBar({required this.hasFriends, this.avatarUrl, this.onAvatarTap});
+  const _TopBar({required this.friendCount, this.avatarUrl, this.onAvatarTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: SizedBox(
@@ -185,7 +188,6 @@ class _TopBar extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Avatar — hình thật từ profile
             _AvatarBtn(
               avatarUrl: avatarUrl,
               onTap: onAvatarTap,
@@ -193,14 +195,14 @@ class _TopBar extends StatelessWidget {
 
             const SizedBox(width: 16),
 
-            // Friend pill — expanded/centered
             Expanded(
-              child: Center(child: _FriendPill(hasFriends: hasFriends)),
+              child: Center(
+                child: _FriendPill(friendCount: friendCount),
+              ),
             ),
 
             const SizedBox(width: 16),
 
-            // Chat — rounded square (border-radius 10px, NOT circle)
             _RoundedSquareBtn(
               child: const Icon(Icons.chat_bubble_rounded,
                   color: MyColors.white, size: 20),
@@ -281,11 +283,14 @@ class _RoundedSquareBtn extends StatelessWidget {
 }
 
 class _FriendPill extends StatelessWidget {
-  final bool hasFriends;
-  const _FriendPill({required this.hasFriends});
+  final int friendCount;
+  const _FriendPill({required this.friendCount});
 
   @override
   Widget build(BuildContext context) {
+    final label = friendCount == 0
+        ? 'Thêm bạn bè'
+        : '$friendCount bạn bè';
     return GestureDetector(
       onTap: () {
         context.push('/friends');
@@ -302,7 +307,7 @@ class _FriendPill extends StatelessWidget {
             const Icon(Icons.group_outlined, color: MyColors.white, size: 18),
             const SizedBox(width: 8),
             Text(
-              hasFriends ? '81 người bạn' : 'Thêm bạn bè',
+              label,
               style: const TextStyle(
                 color: MyColors.white,
                 fontSize: 15,

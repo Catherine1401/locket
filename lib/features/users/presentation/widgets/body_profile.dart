@@ -1,7 +1,10 @@
 import 'package:bottom_sheet/bottom_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:locket/core/theme/colors.dart';
+import 'package:locket/features/friends/injection.dart';
 import 'package:locket/features/users/presentation/riverpod/profile_provider.dart';
 import 'package:locket/features/users/presentation/screens/edit_birthday_screen.dart';
 import 'package:locket/features/users/presentation/screens/edit_name_screen.dart';
@@ -14,25 +17,58 @@ class BodyProfile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(profileProvider).value;
+    // Dùng friendsListProvider (cached) thay vì gọi useCase.call() trực tiếp
+    // để tránh infinite rebuild loop
+    final friendsAsync = ref.watch(friendsListProvider);
+    final friendCount = friendsAsync.value?.length ?? 0;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       color: MyColors.bgProfile,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          // friends
+          // ── Friends ───────────────────────────────────────────
           BadgeBodyProfile(
             iconUrl: 'assets/icons/search.svg',
             title: 'Friends',
             chirdren: [
               ItemElementProfile(
                 iconUrl: 'assets/icons/person2.svg',
-                title: '1 Friend',
+                title: friendCount == 1 ? '1 Friend' : '$friendCount Friends',
+                onTap: () => context.push('/friends'),
+              ),
+              // Share my link
+              ItemElementProfile(
+                iconUrl: 'assets/icons/share.svg',
+                title: 'Share my link',
+                onTap: () {
+                  final shareCode = profile?.shareCode;
+                  if (shareCode == null || shareCode.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Không tìm thấy share code')),
+                    );
+                    return;
+                  }
+                  final link = 'locket://app/add-friend/$shareCode';
+                  Clipboard.setData(ClipboardData(text: link));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Đã copy link vào clipboard!'),
+                      backgroundColor: MyColors.bgButtonLogin,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                },
               ),
             ],
           ),
 
-          // general
+          // ── General ───────────────────────────────────────────
           const SizedBox(height: 24),
           BadgeBodyProfile(
             iconUrl: 'assets/icons/person.svg',
@@ -125,7 +161,7 @@ class BodyProfile extends ConsumerWidget {
             ],
           ),
 
-          // about
+          // ── About ─────────────────────────────────────────────
           const SizedBox(height: 24),
           BadgeBodyProfile(
             iconUrl: 'assets/icons/heart.svg',
@@ -162,7 +198,7 @@ class BodyProfile extends ConsumerWidget {
             ],
           ),
 
-          // danger zone
+          // ── Danger Zone ───────────────────────────────────────
           const SizedBox(height: 24),
           BadgeBodyProfile(
             iconUrl: 'assets/icons/danger.svg',
