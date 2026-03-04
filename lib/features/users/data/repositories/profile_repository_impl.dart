@@ -20,8 +20,8 @@ final class ProfileRepositoryImpl implements ProfileRepository {
 
   @override
   @override
-  Future<void> updateBirthday(String birthday) async {
-    await _datasource.updateBirthday(birthday);
+  Future<String?> updateBirthday(String birthday) async {
+    return await _datasource.updateBirthday(birthday);
   }
 
   @override

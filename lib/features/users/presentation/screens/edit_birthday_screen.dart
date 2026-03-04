@@ -29,10 +29,17 @@ class EditBirthdayScreen extends HookConsumerWidget {
     int? initialMonth;
     int? initialDay;
     if (existingBirthday != null && existingBirthday.isNotEmpty) {
-      final parts = existingBirthday.split('-');
-      if (parts.length >= 3) {
-        initialMonth = int.tryParse(parts[1]);
-        initialDay = int.tryParse(parts[2]);
+      final parsedDate = DateTime.tryParse(existingBirthday);
+      if (parsedDate != null) {
+        initialMonth = parsedDate.month;
+        initialDay = parsedDate.day;
+      } else {
+        // Fallback for old format
+        final parts = existingBirthday.split('-');
+        if (parts.length >= 3) {
+          initialMonth = int.tryParse(parts[1]);
+          initialDay = int.tryParse(parts[2]);
+        }
       }
     }
 
@@ -128,10 +135,30 @@ class EditBirthdayScreen extends HookConsumerWidget {
                 : () async {
                     final mm = selectedMonth.value!.toString().padLeft(2, '0');
                     final dd = selectedDay.value!.toString().padLeft(2, '0');
-                    await ref
-                        .read(profileProvider.notifier)
-                        .updateBirthday('2000-$mm-$dd');
-                    if (context.mounted) Navigator.of(context).pop();
+                    try {
+                      await ref
+                          .read(profileProvider.notifier)
+                          .updateBirthday('2000-$mm-$dd');
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Đã cập nhật sinh nhật! 🎉'),
+                            backgroundColor: Color(0xFF333333),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(e.toString().replaceAll('Exception: ', '')),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
                   },
             leading: isLoading
                 ? const SizedBox(

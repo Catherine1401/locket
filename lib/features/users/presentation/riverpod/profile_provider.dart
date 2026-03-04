@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:locket/features/users/domain/entities/profile.dart';
@@ -20,23 +21,23 @@ base class ProfileNotifier extends AsyncNotifier<Profile?> {
   }
 
   Future<void> logout() async {
-    print("=== Bắt đầu Logout ===");
+    debugPrint("=== Bắt đầu Logout ===");
     state = const AsyncValue.loading();
 
     state = await AsyncValue.guard(() async {
-      print("--- Đang gọi SignoutUseCase ---");
+      debugPrint("--- Đang gọi SignoutUseCase ---");
       final signoutUseCase = await ref.read(signoutUseCaseProvider.future);
-      print("--- Gọi API Logout ---");
+      debugPrint("--- Gọi API Logout ---");
 
       await signoutUseCase.call();
-      print("--- Gọi API Logout thành công ---");
+      debugPrint("--- Gọi API Logout thành công ---");
 
       return null;
     });
 
     if (state.hasError) {
-      print("Lỗi tìm thấy trong state: ${state.error}");
-      print("Chi tiết: ${state.stackTrace}");
+      debugPrint("Lỗi tìm thấy trong state: ${state.error}");
+      debugPrint("Chi tiết: ${state.stackTrace}");
     }
   }
 
@@ -54,20 +55,22 @@ base class ProfileNotifier extends AsyncNotifier<Profile?> {
       return currentUser?.copyWith(displayName: displayName);
     });
 
-    print(
+    debugPrint(
       '[debug] Sau khi update: ${state.value?.displayName} (Hash: ${state.value?.hashCode})',
     );
   }
 
   Future<void> updateBirthday(String birthday) async {
     final currentUser = state.value;
-    state = AsyncValue.loading();
-
-    state = await AsyncValue.guard(() async {
+    state = const AsyncValue.loading();
+    try {
       final repo = await ref.read(profileRepositoryProvider.future);
-      await repo.updateBirthday(birthday);
-      return currentUser?.copyWith(birthday: birthday);
-    });
+      final newBirthday = await repo.updateBirthday(birthday);
+      state = AsyncValue.data(currentUser?.copyWith(birthday: newBirthday ?? birthday));
+    } catch (e) {
+      state = AsyncValue.data(currentUser);
+      throw Exception('Không thể cập nhật sinh nhật.');
+    }
   }
 
   Future<void> updateAvatar() async {

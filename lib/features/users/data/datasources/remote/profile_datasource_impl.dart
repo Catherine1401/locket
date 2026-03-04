@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 
 import 'package:dio/dio.dart';
@@ -25,7 +26,7 @@ final class ProfileDatasourceImpl implements ProfileDatasource {
       }
       return null;
     } catch (e) {
-      print("Error from getProfile: $e");
+      debugPrint("Error from getProfile: $e");
       return null;
     }
   }
@@ -44,23 +45,23 @@ final class ProfileDatasourceImpl implements ProfileDatasource {
   }
 
   @override
-  Future<void> updateBirthday(String birthday) async {
-    try {
-      const path = '/users/me/birthday';
-      await _dio.put(path, data: {'birthday': birthday});
-    } catch (e) {
-      print("Error from updateBirthday: $e");
+  Future<String?> updateBirthday(String birthday) async {
+    const path = '/users/me/birthday';
+    final response = await _dio.put(path, data: {'birthday': birthday});
+    if (response.statusCode == 200) {
+      return response.data['birthday'] as String?;
     }
+    throw Exception('updateBirthday failed: \${response.statusCode}');
   }
 
   @override
   Future<void> updateDisplayName(String displayName) async {
     try {
-      print("updateDisplayName: $displayName");
+      debugPrint("updateDisplayName: $displayName");
       const path = '/users/me/name';
       await _dio.put(path, data: {'displayName': displayName});
     } catch (e) {
-      print("Error from updateDisplayName: $e");
+      debugPrint("Error from updateDisplayName: $e");
     }
   }
   
