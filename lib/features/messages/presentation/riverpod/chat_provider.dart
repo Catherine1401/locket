@@ -85,10 +85,10 @@ class ChatNotifier extends Notifier<ChatState> {
     }
   }
 
-  Future<void> sendMessage(String conversationId, String content) async {
+  Future<void> sendMessage(String conversationId, String content, {String? replyToMomentId}) async {
     try {
       final useCase = await ref.read(sendMessageUseCaseProvider.future);
-      final message = await useCase.call(conversationId, content);
+      final message = await useCase.call(conversationId, content, replyToMomentId: replyToMomentId);
       state = state.copyWith(messages: [...state.messages, message]);
     } catch (e) {
       state = state.copyWith(error: e.toString());

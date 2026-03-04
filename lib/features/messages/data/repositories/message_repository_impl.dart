@@ -19,6 +19,6 @@ final class MessageRepositoryImpl implements MessageRepository {
       _datasource.getMessages(conversationId, nextCursor: nextCursor);
 
   @override
-  Future<Message> sendMessage(String conversationId, String content) =>
-      _datasource.sendMessage(conversationId, content);
+  Future<Message> sendMessage(String conversationId, String content, {String? replyToMomentId}) =>
+      _datasource.sendMessage(conversationId, content, replyToMomentId: replyToMomentId);
 }

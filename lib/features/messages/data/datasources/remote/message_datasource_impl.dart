@@ -54,10 +54,17 @@ final class MessageDatasourceImpl implements MessageDatasource {
   }
 
   @override
-  Future<Message> sendMessage(String conversationId, String content) async {
+  Future<Message> sendMessage(String conversationId, String content, {String? replyToMomentId}) async {
+    final data = <String, dynamic>{
+      'conversationId': conversationId,
+      'content': content,
+    };
+    if (replyToMomentId != null) {
+      data['replyToMomentId'] = replyToMomentId;
+    }
     final response = await _dio.post(
       '/messages',
-      data: {'conversationId': conversationId, 'content': content},
+      data: data,
     );
     return Message.fromJson(response.data as Map<String, dynamic>);
   }

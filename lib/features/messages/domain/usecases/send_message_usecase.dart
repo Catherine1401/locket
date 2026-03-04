@@ -5,6 +5,6 @@ final class SendMessageUseCase {
   final MessageRepository _repository;
   SendMessageUseCase(this._repository);
 
-  Future<Message> call(String conversationId, String content) =>
-      _repository.sendMessage(conversationId, content);
+  Future<Message> call(String conversationId, String content, {String? replyToMomentId}) =>
+      _repository.sendMessage(conversationId, content, replyToMomentId: replyToMomentId);
 }

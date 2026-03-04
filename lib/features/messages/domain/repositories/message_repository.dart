@@ -7,5 +7,5 @@ abstract interface class MessageRepository {
     String conversationId, {
     String? nextCursor,
   });
-  Future<Message> sendMessage(String conversationId, String content);
+  Future<Message> sendMessage(String conversationId, String content, {String? replyToMomentId});
 }

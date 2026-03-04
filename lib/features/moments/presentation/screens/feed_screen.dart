@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:locket/core/theme/colors.dart';
 import 'package:locket/features/friends/domain/entities/friend.dart';
 import 'package:locket/features/friends/injection.dart';
+import 'package:locket/features/messages/presentation/riverpod/chat_provider.dart';
+import 'package:locket/features/messages/presentation/riverpod/conversations_provider.dart';
+import 'package:locket/features/messages/presentation/screens/chat_screen.dart';
 import 'package:locket/features/moments/domain/entities/moment.dart';
 import 'package:locket/features/moments/presentation/riverpod/moment_feed_provider.dart';
 import 'package:locket/features/moments/presentation/screens/grid_screen.dart';
@@ -41,6 +44,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
+      resizeToAvoidBottomInset: false, // Ngăn FeedScreen bị co lại gây lỗi overflow khi bàn phím hiện
       body: GestureDetector(
         // Vuốt xuống → back về camera
         onVerticalDragEnd: (details) {
@@ -258,7 +262,10 @@ class _MomentPage extends StatelessWidget {
         ),
 
         // ── Message bar + emojis ────────────────────────────────────
-        _MessageBar(moment: moment),
+        if (!isOwn)
+          _MessageBar(moment: moment)
+        else
+          const SizedBox(height: 52),
 
         const SizedBox(height: 16),
       ],
@@ -281,6 +288,22 @@ class _MessageBar extends StatelessWidget {
   final Moment moment;
   const _MessageBar({required this.moment});
 
+  void _showReplyScreen(BuildContext context, {String? preset}) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black54,
+        barrierDismissible: true,
+        barrierLabel: 'Reply',
+        transitionDuration: const Duration(milliseconds: 200),
+        pageBuilder: (context, _, __) => _ReplyMomentScreen(moment: moment, preset: preset),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -296,11 +319,12 @@ class _MessageBar extends StatelessWidget {
             // Text input (Gửi tin nhắn...)
             Expanded(
               child: GestureDetector(
-                onTap: () {},
+                onTap: () => _showReplyScreen(context),
                 child: Container(
                   height: double.infinity,
                   padding: const EdgeInsets.only(left: 20),
                   alignment: Alignment.centerLeft,
+                  color: Colors.transparent, // to make it clickable
                   child: const Text(
                     'Gửi tin nhắn...',
                     style: TextStyle(color: Color(0xFF888888), fontSize: 15),
@@ -310,16 +334,16 @@ class _MessageBar extends StatelessWidget {
             ),
 
             // Emojis bên trong cùng 1 pill
-            _EmojiBtn('😂'),
+            _EmojiBtn('😂', onTap: () => _showReplyScreen(context, preset: '😂')),
             const SizedBox(width: 8),
-            _EmojiBtn('💛'),
+            _EmojiBtn('💛', onTap: () => _showReplyScreen(context, preset: '💛')),
             const SizedBox(width: 8),
-            _EmojiBtn('😡'),
+            _EmojiBtn('😡', onTap: () => _showReplyScreen(context, preset: '😡')),
             const SizedBox(width: 8),
 
             // Add emoji icon
             GestureDetector(
-              onTap: () {},
+              onTap: () => _showReplyScreen(context),
               child: const Icon(
                 Icons.add_reaction_outlined,
                 color: Colors.white54,
@@ -334,14 +358,115 @@ class _MessageBar extends StatelessWidget {
   }
 }
 
+// ── Reply Moment Screen (Màn hình mờ có chứa ChatInputBar) ───────────────────
+
+class _ReplyMomentScreen extends ConsumerStatefulWidget {
+  final Moment moment;
+  final String? preset;
+  
+  const _ReplyMomentScreen({required this.moment, this.preset});
+
+  @override
+  ConsumerState<_ReplyMomentScreen> createState() => _ReplyMomentScreenState();
+}
+
+class _ReplyMomentScreenState extends ConsumerState<_ReplyMomentScreen> {
+  late final TextEditingController _controller;
+  final _focusNode = FocusNode();
+  bool _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.preset);
+    if (widget.preset != null) {
+      _controller.selection = TextSelection.fromPosition(TextPosition(offset: widget.preset!.length));
+    }
+    _focusNode.requestFocus();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSend() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty || _isSending) return;
+
+    setState(() => _isSending = true);
+
+    try {
+      final conversations = ref.read(conversationsProvider).value ?? [];
+      final conversation = conversations.firstWhere(
+        (c) => c.partnerId == widget.moment.userId,
+        orElse: () => throw Exception('Conversation not found'),
+      );
+
+      await ref.read(chatProvider.notifier).sendMessage(
+        conversation.id,
+        text,
+        replyToMomentId: widget.moment.id.toString(),
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Tắt Dialog màn mờ
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã trả lời khoảnh khắc! 🚀'),
+            backgroundColor: Color(0xFF333333),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không thể gửi tin nhắn')),
+        );
+      }
+    } finally {
+      if (mounted && _isSending) {
+        setState(() => _isSending = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Column(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          ChatInputBar(
+            controller: _controller,
+            focusNode: _focusNode,
+            isSending: _isSending,
+            onSend: _handleSend,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _EmojiBtn extends StatelessWidget {
   final String emoji;
-  const _EmojiBtn(this.emoji);
+  final VoidCallback onTap;
+  const _EmojiBtn(this.emoji, {required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: onTap,
       child: Text(emoji, style: const TextStyle(fontSize: 22)),
     );
   }
@@ -382,6 +507,7 @@ class FeedTopBar extends ConsumerWidget {
   final ValueChanged<String?> onFilterChanged;
 
   const FeedTopBar({
+    super.key,
     required this.filterUserId,
     required this.friends,
     this.myAvatarUrl,
@@ -487,8 +613,11 @@ class _FilterSheet extends StatelessWidget {
   final String? currentId;
   final ValueChanged<String?> onSelect;
 
-  const _FilterSheet(
-      {required this.friends, this.currentId, required this.onSelect});
+  const _FilterSheet({
+    required this.friends,
+    this.currentId,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {

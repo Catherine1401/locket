@@ -3,8 +3,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:locket/features/messages/domain/entities/conversation.dart';
+import 'package:locket/features/messages/domain/entities/message.dart';
 import 'package:locket/features/messages/presentation/riverpod/chat_provider.dart';
 import 'package:locket/features/users/presentation/riverpod/profile_provider.dart';
+
+
+String _formatTimeAgoShort(DateTime dt) {
+  final diff = DateTime.now().difference(dt);
+  if (diff.inMinutes < 60) return '${diff.inMinutes > 0 ? diff.inMinutes : 1}m';
+  if (diff.inHours < 24) return '${diff.inHours}h';
+  return '${diff.inDays}d';
+}
+
+String _formatTimeDetail(DateTime dt) {
+  final h = dt.hour;
+  final m = dt.minute.toString().padLeft(2, '0');
+  if (h >= 12) {
+    final hr = h == 12 ? 12 : h - 12;
+    return '$hr:$m CH';
+  } else {
+    final hr = h == 0 ? 12 : h;
+    return '$hr:$m SA';
+  }
+}
 
 class ChatScreen extends ConsumerStatefulWidget {
   final String conversationId;
@@ -171,6 +192,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                   showAvatar: !isMe && isLastInGroup,
                                   partnerAvatar: partnerAvatar,
                                   partnerName: partnerName,
+                                  replyToMoment: msg.replyToMoment,
                                 ),
                                 const SizedBox(height: 4),
                               ],
@@ -180,7 +202,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
 
             // ── Input Bar ───────────────────────────────────────────
-            _InputBar(
+            ChatInputBar(
               controller: _textController,
               isSending: _isSending,
               onSend: _sendMessage,
@@ -258,6 +280,7 @@ class _MessageBubble extends StatelessWidget {
   final bool showAvatar;
   final String? partnerAvatar;
   final String? partnerName;
+  final ReplyMoment? replyToMoment;
 
   const _MessageBubble({
     required this.content,
@@ -265,6 +288,7 @@ class _MessageBubble extends StatelessWidget {
     this.showAvatar = false,
     this.partnerAvatar,
     this.partnerName,
+    this.replyToMoment,
   });
 
   @override
@@ -283,24 +307,121 @@ class _MessageBubble extends StatelessWidget {
             const SizedBox(width: 8),
           ],
           Flexible(
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.72,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              decoration: BoxDecoration(
-                color: isMe ? const Color(0xFFE5E5E5) : const Color(0xFF2A2A2A),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Text(
-                content,
-                style: TextStyle(
-                  color: isMe ? Colors.black : Colors.white,
-                  fontSize: 16,
-                  height: 1.3,
-                  fontWeight: FontWeight.w500,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                if (replyToMoment != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(36),
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.8,
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            if (replyToMoment!.imageUrl != null)
+                              CachedNetworkImage(
+                                imageUrl: replyToMoment!.imageUrl!,
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => const ColoredBox(color: Colors.black26),
+                                errorWidget: (_, __, ___) => const ColoredBox(color: Colors.black26),
+                              ),
+                            // Top-left overlay: Avatar, Name, Time ago
+                            Positioned(
+                              top: 16,
+                              left: 16,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (replyToMoment!.authorAvatar != null)
+                                      CircleAvatar(
+                                        radius: 10,
+                                        backgroundImage: NetworkImage(replyToMoment!.authorAvatar!),
+                                      )
+                                    else
+                                      const CircleAvatar(
+                                        radius: 10,
+                                        backgroundColor: Colors.grey,
+                                        child: Icon(Icons.person, size: 12, color: Colors.white),
+                                      ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      replyToMoment!.authorName ?? 'Unknown',
+                                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                    ),
+                                    if (replyToMoment!.createdAt != null) ...[
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        _formatTimeAgoShort(replyToMoment!.createdAt!),
+                                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                      ),
+                                    ]
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Bottom-center overlay: Clock icon + Time
+                            if (replyToMoment!.createdAt != null)
+                              Positioned(
+                                bottom: 16,
+                                left: 0,
+                                right: 0,
+                                child: Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.6),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.access_time_filled, color: Colors.white, size: 14),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          _formatTimeDetail(replyToMoment!.createdAt!),
+                                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                Container(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.72,
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isMe ? const Color(0xFFE5E5E5) : const Color(0xFF2A2A2A),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Text(
+                    content,
+                    style: TextStyle(
+                      color: isMe ? Colors.black : Colors.white,
+                      fontSize: 16,
+                      height: 1.3,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -311,22 +432,25 @@ class _MessageBubble extends StatelessWidget {
 
 // ── Input Bar ─────────────────────────────────────────────────────────────────
 
-class _InputBar extends StatefulWidget {
+class ChatInputBar extends StatefulWidget {
   final TextEditingController controller;
+  final FocusNode? focusNode;
   final bool isSending;
   final VoidCallback onSend;
 
-  const _InputBar({
+  const ChatInputBar({
+    super.key,
     required this.controller,
+    this.focusNode,
     required this.isSending,
     required this.onSend,
   });
 
   @override
-  State<_InputBar> createState() => _InputBarState();
+  State<ChatInputBar> createState() => _ChatInputBarState();
 }
 
-class _InputBarState extends State<_InputBar> {
+class _ChatInputBarState extends State<ChatInputBar> {
   bool _hasText = false;
 
   @override
@@ -368,6 +492,7 @@ class _InputBarState extends State<_InputBar> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: TextField(
                   controller: widget.controller,
+                  focusNode: widget.focusNode,
                   style: const TextStyle(
                       color: Colors.white, fontSize: 16, height: 1.3),
                   maxLines: null,
