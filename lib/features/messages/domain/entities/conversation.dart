@@ -25,4 +25,17 @@ final class Conversation {
             ? DateTime.parse(json['lastMessageAt'] as String)
             : null,
       );
+
+  Conversation copyWith({
+    String? lastMessage,
+    DateTime? lastMessageAt,
+  }) =>
+      Conversation(
+        id: id,
+        partnerId: partnerId,
+        partnerName: partnerName,
+        partnerAvatar: partnerAvatar,
+        lastMessage: lastMessage ?? this.lastMessage,
+        lastMessageAt: lastMessageAt ?? this.lastMessageAt,
+      );
 }
