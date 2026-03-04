@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:image/image.dart' as img;
 import 'package:locket/core/injection.dart';
 import 'package:locket/core/theme/colors.dart';
 import 'package:locket/features/friends/injection.dart';
@@ -34,7 +37,7 @@ class CameraScreen extends HookConsumerWidget {
           SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     }, []);
 
-    void _openFeed() => Navigator.of(context).push(
+    void openFeed() => Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const FeedScreen()),
     );
 
@@ -43,7 +46,7 @@ class CameraScreen extends HookConsumerWidget {
       body: GestureDetector(
         // Vuốt lên → FeedScreen
         onVerticalDragEnd: (details) {
-          if ((details.primaryVelocity ?? 0) < -300) _openFeed();
+          if ((details.primaryVelocity ?? 0) < -300) openFeed();
         },
         child: SafeArea(
           child: Column(
@@ -102,11 +105,24 @@ class CameraScreen extends HookConsumerWidget {
                         }
                         try {
                           final image = await controller.value!.takePicture();
+                          String finalPath = image.path;
+
+                          // Lật ảnh nếu đang dùng camera trước
+                          if (isFrontCamera.value) {
+                            final bytes = await File(image.path).readAsBytes();
+                            final decoded = img.decodeImage(bytes);
+                            if (decoded != null) {
+                              final flipped = img.flipHorizontal(decoded);
+                              final flippedBytes = img.encodeJpg(flipped, quality: 90);
+                              await File(image.path).writeAsBytes(flippedBytes);
+                            }
+                          }
+
                           if (context.mounted) {
                             await Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => MomentPreviewScreen(
-                                  imagePath: image.path,
+                                  imagePath: finalPath,
                                 ),
                               ),
                             );
@@ -125,7 +141,7 @@ class CameraScreen extends HookConsumerWidget {
                           isFrontCamera.value,
                         );
                       },
-                      onGrid: _openFeed,
+                      onGrid: openFeed,
                     ),
 
                     const Spacer(),
@@ -388,7 +404,7 @@ class _Viewfinder extends StatelessWidget {
                 width: 30,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.45),
+                  color: Colors.black.withValues(alpha: 0.45),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -410,7 +426,7 @@ class _Viewfinder extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.45),
+                color: Colors.black.withValues(alpha: 0.45),
                 borderRadius: BorderRadius.circular(999),
               ),
               child: const Text(
@@ -552,7 +568,7 @@ class _Footer extends StatelessWidget {
                   width: 20,
                   height: 20,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   alignment: Alignment.center,
