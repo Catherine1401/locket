@@ -178,7 +178,7 @@ class EditBirthdayScreen extends HookConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 180),
         ],
       ),
     );

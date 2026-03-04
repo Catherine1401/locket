@@ -112,12 +112,14 @@ class BodyProfile extends ConsumerWidget {
                 title: 'Edit birthday',
                 onTap: () {
                   showStickyFlexibleBottomSheet(
-                    initHeight: .4,
+                    minHeight: .5,
+                    initHeight: .5,
+                    maxHeight: .5,
                     headerHeight: 24,
                     isCollapsible: true,
                     isDismissible: true,
                     isModal: true,
-                    anchors: [0.0, .4],
+                    anchors: [0.0, .5],
                     bottomSheetColor: MyColors.bgEditName,
                     bottomSheetBorderRadius: BorderRadius.vertical(
                       top: Radius.circular(28),
