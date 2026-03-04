@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:locket/core/injection.dart';
 import 'package:locket/features/messages/domain/entities/message.dart';
 import 'package:locket/features/messages/injection.dart';
+import 'package:locket/features/messages/presentation/riverpod/conversations_provider.dart';
 
 // ── State ───────────────────────────────────────────────────────────────────
 
@@ -64,12 +65,24 @@ class ChatNotifier extends Notifier<ChatState> {
         hasMore: result.nextCursor != null,
       );
 
+      // Đánh dấu đã đọc khi mở chat screen
+      _markRead(conversationId);
+
       // ── Kết nối Socket.IO và lắng nghe tin nhắn mới ──────────────────
       _joinSocketRoom(conversationId);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
+
+  Future<void> _markRead(String conversationId) async {
+    try {
+      final useCase = await ref.read(markReadUseCaseProvider.future);
+      await useCase.call(conversationId);
+      ref.read(conversationsProvider.notifier).markRead(conversationId);
+    } catch (_) {}
+  }
+
 
   /// Join socket room và subscribe vào stream new_message
   void _joinSocketRoom(String conversationId) {

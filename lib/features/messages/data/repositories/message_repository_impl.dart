@@ -21,4 +21,8 @@ final class MessageRepositoryImpl implements MessageRepository {
   @override
   Future<Message> sendMessage(String conversationId, String content, {String? replyToMomentId}) =>
       _datasource.sendMessage(conversationId, content, replyToMomentId: replyToMomentId);
+
+  @override
+  Future<void> markRead(String conversationId) =>
+      _datasource.markRead(conversationId);
 }

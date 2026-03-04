@@ -8,4 +8,5 @@ abstract interface class MessageRepository {
     String? nextCursor,
   });
   Future<Message> sendMessage(String conversationId, String content, {String? replyToMomentId});
+  Future<void> markRead(String conversationId);
 }

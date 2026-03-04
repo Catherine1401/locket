@@ -8,4 +8,5 @@ abstract interface class MessageDatasource {
     String? nextCursor,
   });
   Future<Message> sendMessage(String conversationId, String content, {String? replyToMomentId});
+  Future<void> markRead(String conversationId);
 }

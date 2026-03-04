@@ -126,6 +126,7 @@ class _ConversationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isUnread = conversation.isUnread;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -141,6 +142,7 @@ class _ConversationTile extends StatelessWidget {
                 url: conversation.partnerAvatar,
                 name: conversation.partnerName,
                 radius: 28,
+                showUnreadRing: isUnread,
               ),
               const SizedBox(width: 14),
 
@@ -157,10 +159,10 @@ class _ConversationTile extends StatelessWidget {
                         Flexible(
                           child: Text(
                             conversation.partnerName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
                               fontSize: 15,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: isUnread ? FontWeight.w700 : FontWeight.w600,
                               height: 1.2,
                             ),
                             maxLines: 1,
@@ -171,10 +173,10 @@ class _ConversationTile extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             _formatTime(conversation.lastMessageAt!),
-                            style: const TextStyle(
-                              color: Color(0xFF666666),
+                            style: TextStyle(
+                              color: isUnread ? Colors.white : const Color(0xFF666666),
                               fontSize: 15,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: isUnread ? FontWeight.w600 : FontWeight.w500,
                               height: 1.2,
                             ),
                           ),
@@ -186,10 +188,13 @@ class _ConversationTile extends StatelessWidget {
                     Text(
                       conversation.lastMessage ?? 'Bắt đầu cuộc trò chuyện',
                       style: TextStyle(
-                        color: conversation.lastMessage != null
-                            ? const Color(0xFF999999)
-                            : const Color(0xFF555555),
+                        color: isUnread
+                            ? Colors.white
+                            : conversation.lastMessage != null
+                                ? const Color(0xFF999999)
+                                : const Color(0xFF555555),
                         fontSize: 13,
+                        fontWeight: isUnread ? FontWeight.w500 : FontWeight.w400,
                         height: 1.3,
                       ),
                       maxLines: 1,
@@ -198,14 +203,24 @@ class _ConversationTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 8),
 
-              // ── Chevron ──────────────────────────────────────────
-              const Icon(
-                Icons.chevron_right,
-                color: Color(0xFF444444),
-                size: 22,
-              ),
+              // ── Unread dot OR Chevron ──────────────────────────────
+              if (isUnread)
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFB800),
+                    shape: BoxShape.circle,
+                  ),
+                )
+              else
+                const Icon(
+                  Icons.chevron_right,
+                  color: Color(0xFF444444),
+                  size: 22,
+                ),
             ],
           ),
         ),
@@ -240,7 +255,9 @@ class _Avatar extends StatelessWidget {
   final String name;
   final double radius;
 
-  const _Avatar({this.url, required this.name, required this.radius});
+  final bool showUnreadRing;
+
+  const _Avatar({this.url, required this.name, required this.radius, this.showUnreadRing = false});
 
   static const _palette = [
     Color(0xFFE57373), // red
@@ -270,8 +287,7 @@ class _Avatar extends StatelessWidget {
         ),
       );
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _avatarWidget() {
     if (url == null || url!.isEmpty) return _fallback();
     return CircleAvatar(
       radius: radius,
@@ -285,6 +301,21 @@ class _Avatar extends StatelessWidget {
           placeholder: (_, __) => _fallback(),
           errorWidget: (_, __, ___) => _fallback(),
         ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!showUnreadRing) return _avatarWidget();
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFFFB800), width: 2.5),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: _avatarWidget(),
       ),
     );
   }

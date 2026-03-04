@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:locket/features/messages/data/datasources/remote/message_datasource.dart';
 import 'package:locket/features/messages/domain/entities/conversation.dart';
 import 'package:locket/features/messages/domain/entities/message.dart';
@@ -19,7 +20,7 @@ final class MessageDatasourceImpl implements MessageDatasource {
       }
       return [];
     } catch (e) {
-      print('MessageDatasourceImpl.getConversations error: $e');
+      debugPrint('MessageDatasourceImpl.getConversations error: $e');
       return [];
     }
   }
@@ -48,7 +49,7 @@ final class MessageDatasourceImpl implements MessageDatasource {
       }
       return (messages: <Message>[], nextCursor: null);
     } catch (e) {
-      print('MessageDatasourceImpl.getMessages error: $e');
+      debugPrint('MessageDatasourceImpl.getMessages error: $e');
       return (messages: <Message>[], nextCursor: null);
     }
   }
@@ -67,5 +68,14 @@ final class MessageDatasourceImpl implements MessageDatasource {
       data: data,
     );
     return Message.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> markRead(String conversationId) async {
+    try {
+      await _dio.put('/conversations/$conversationId/read');
+    } catch (e) {
+      // Mark read failure is non-critical  
+    }
   }
 }

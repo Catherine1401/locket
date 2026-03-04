@@ -6,6 +6,7 @@ import 'package:locket/features/messages/data/repositories/message_repository_im
 import 'package:locket/features/messages/domain/repositories/message_repository.dart';
 import 'package:locket/features/messages/domain/usecases/get_conversations_usecase.dart';
 import 'package:locket/features/messages/domain/usecases/get_messages_usecase.dart';
+import 'package:locket/features/messages/domain/usecases/mark_read_usecase.dart';
 import 'package:locket/features/messages/domain/usecases/send_message_usecase.dart';
 
 final messageDatasourceProvider =
@@ -36,4 +37,10 @@ final sendMessageUseCaseProvider =
     FutureProvider<SendMessageUseCase>((ref) async {
   final repo = await ref.read(messageRepositoryProvider.future);
   return SendMessageUseCase(repo);
+});
+
+final markReadUseCaseProvider =
+    FutureProvider<MarkReadUseCase>((ref) async {
+  final repo = await ref.read(messageRepositoryProvider.future);
+  return MarkReadUseCase(repo);
 });

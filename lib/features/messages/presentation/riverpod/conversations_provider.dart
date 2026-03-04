@@ -42,10 +42,11 @@ final class ConversationsNotifier
       final idx = current.indexWhere((c) => c.id == newMessage.conversationId);
       if (idx == -1) return;
 
-      // Cập nhật lastMessage và lastMessageAt
+      // Cập nhật lastMessage và lastMessageAt và đánh dấu chưa đọc
       final updated = current[idx].copyWith(
         lastMessage: newMessage.content,
         lastMessageAt: newMessage.createdAt,
+        isUnread: true,
       );
 
       // Đưa conversation đó lên đầu danh sách (mới nhất ở trên cùng)
@@ -66,5 +67,16 @@ final class ConversationsNotifier
     });
     // Re-subscribe sau khi reload
     _subscribeToSocket();
+  }
+
+  /// Đánh dấu conversation đã đọc trong local state (sau khi mở ChatScreen)
+  void markRead(String conversationId) {
+    final current = state.value;
+    if (current == null) return;
+    final idx = current.indexWhere((c) => c.id == conversationId);
+    if (idx == -1) return;
+    final newList = List<Conversation>.from(current);
+    newList[idx] = newList[idx].copyWith(isUnread: false);
+    state = AsyncValue.data(newList);
   }
 }
