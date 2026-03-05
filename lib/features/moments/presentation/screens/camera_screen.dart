@@ -141,7 +141,7 @@ class CameraScreen extends HookConsumerWidget {
                           isFrontCamera.value,
                         );
                       },
-                      onGrid: openFeed,
+                      onGrid: () {},
                     ),
 
                     const Spacer(),

@@ -114,7 +114,7 @@ class _MomentPreviewScreenState extends ConsumerState<MomentPreviewScreen> {
                       _ActionBar(
                         isSending: _isSending,
                         onClose: () => Navigator.of(context).pop(),
-                        onSend: _onSend,
+                        onSend: () => _showSelectFriendsSheet(friendsAsync),
                         onAddText: _onAddMessage,
                       ),
                     ],
@@ -123,28 +123,6 @@ class _MomentPreviewScreenState extends ConsumerState<MomentPreviewScreen> {
               ),
             ),
 
-            // ── Friends row always at bottom ─────────────────────────
-            _FriendsRow(
-              friendsAsync: friendsAsync,
-              sendToAll: _sendToAll,
-              selectedFriendIds: _selectedFriendIds ?? {},
-              onToggleAll: () => setState(() => _selectedFriendIds = null),
-              onToggleFriend: (friend) {
-                setState(() {
-                  // When first picking a specific friend, leave "All" mode
-                  _selectedFriendIds ??= {};
-                  final ids = Set<String>.from(_selectedFriendIds!);
-                  if (ids.contains(friend.userId)) {
-                    ids.remove(friend.userId);
-                    _selectedFriendIds =
-                        ids.isEmpty ? null : ids; // back to "All" if empty
-                  } else {
-                    ids.add(friend.userId);
-                    _selectedFriendIds = ids;
-                  }
-                });
-              },
-            ),
           ],
         ),
       ),
@@ -155,9 +133,7 @@ class _MomentPreviewScreenState extends ConsumerState<MomentPreviewScreen> {
 
   Future<void> _onSend() async {
     if (_captionWordCount > 100) {
-      setState(() {
-        _errorMsg = 'Caption tối đa 100 từ';
-      });
+      setState(() { _errorMsg = 'Caption tối đa 100 từ'; });
       return;
     }
 
@@ -167,28 +143,168 @@ class _MomentPreviewScreenState extends ConsumerState<MomentPreviewScreen> {
     });
 
     try {
-      final useCase =
-          await ref.read(createMomentUseCaseProvider.future);
+      final useCase = await ref.read(createMomentUseCaseProvider.future);
       await useCase.call(
         widget.imagePath,
         _messageCtrl.text.trim().isEmpty ? null : _messageCtrl.text.trim(),
       );
       if (mounted) Navigator.of(context).pop();
     } on FormatException catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMsg = e.message;
-          _isSending = false;
-        });
-      }
+      if (mounted) setState(() { _errorMsg = e.message; _isSending = false; });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMsg = 'Gửi thất bại. Vui lòng thử lại.';
-          _isSending = false;
-        });
-      }
+      if (mounted) setState(() { _errorMsg = 'Gửi thất bại. Vui lòng thử lại.'; _isSending = false; });
     }
+  }
+
+  // ── Select Friends Bottom Sheet ──────────────────────────────────────────────
+
+  void _showSelectFriendsSheet(AsyncValue<List<Friend>> friendsAsync) {
+    // Local copy of selection state for the sheet
+    Set<String>? sheetSelectedIds = _selectedFriendIds == null
+        ? null
+        : Set<String>.from(_selectedFriendIds!);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final friends = friendsAsync.value ?? [];
+          final sendToAll = sheetSelectedIds == null;
+
+          return Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.75,
+            ),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1C1C1E),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Handle bar ──────────────────────────────────────
+                Container(
+                  margin: const EdgeInsets.only(top: 10, bottom: 4),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+
+                // ── Title ───────────────────────────────────────────
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  child: Text(
+                    'Người bạn',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+
+                const Divider(color: Color(0xFF2C2C2E), height: 1),
+
+                // ── Friend list ─────────────────────────────────────
+                Flexible(
+                  child: friendsAsync.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    ),
+                    error: (_, __) => const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text('Không tải được danh sách', style: TextStyle(color: Colors.white70)),
+                    ),
+                    data: (friends) => ListView(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      children: [
+                        // "Tất cả" option
+                        _FriendSheetTile(
+                          avatar: Container(
+                            width: 52,
+                            height: 52,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFF3A3A3C),
+                            ),
+                            child: const Icon(Icons.group, color: Colors.white, size: 26),
+                          ),
+                          name: 'Tất cả',
+                          isSelected: sendToAll,
+                          onTap: () => setSheetState(() => sheetSelectedIds = null),
+                        ),
+                        ...friends.map((f) {
+                          final isSelected = sheetSelectedIds?.contains(f.userId) ?? false;
+                          return _FriendSheetTile(
+                            avatar: _FriendAvatar(friend: f),
+                            name: f.name,
+                            isSelected: isSelected,
+                            onTap: () => setSheetState(() {
+                              sheetSelectedIds ??= {};
+                              final ids = Set<String>.from(sheetSelectedIds!);
+                              if (ids.contains(f.userId)) {
+                                ids.remove(f.userId);
+                                sheetSelectedIds = ids.isEmpty ? null : ids;
+                              } else {
+                                ids.add(f.userId);
+                                sheetSelectedIds = ids;
+                              }
+                            }),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // ── Send button ─────────────────────────────────────
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFD60A),
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          // Apply selection to parent state
+                          setState(() => _selectedFriendIds = sheetSelectedIds);
+                          Navigator.pop(ctx);
+                          _onSend();
+                        },
+                        child: const Text(
+                          'Gửi',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _onDownload() async {
@@ -736,6 +852,64 @@ class _FriendChip extends StatelessWidget {
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Friend Sheet Tile ────────────────────────────────────────────────────────
+
+class _FriendSheetTile extends StatelessWidget {
+  final Widget avatar;
+  final String name;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FriendSheetTile({
+    required this.avatar,
+    required this.name,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Row(
+          children: [
+            SizedBox(width: 52, height: 52, child: avatar),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? const Color(0xFFFFD60A) : Colors.transparent,
+                border: Border.all(
+                  color: isSelected ? const Color(0xFFFFD60A) : const Color(0xFF555555),
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check, color: Colors.black, size: 16)
+                  : null,
             ),
           ],
         ),
