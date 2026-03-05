@@ -144,9 +144,11 @@ class ChatNotifier extends Notifier<ChatState> {
     try {
       final useCase = await ref.read(sendMessageUseCaseProvider.future);
       final message = await useCase.call(conversationId, content, replyToMomentId: replyToMomentId);
-      // Append message của người gửi ngay lập tức (optimistic update)
-      // Socket event sẽ được lọc duplicate bằng message.id
-      state = state.copyWith(messages: [...state.messages, message]);
+      // Socket event có thể đã đến trước REST response → kiểm tra duplicate
+      final alreadyAdded = state.messages.any((m) => m.id == message.id);
+      if (!alreadyAdded) {
+        state = state.copyWith(messages: [...state.messages, message]);
+      }
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
