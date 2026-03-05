@@ -96,11 +96,18 @@ class ChatNotifier extends Notifier<ChatState> {
     _socketSub = socketService.messageStream
         .where((msg) => msg.conversationId == conversationId)
         .listen((newMessage) {
+      if (!ref.mounted) return; // Provider đã bị dispose
       // Tránh duplicate nếu chính người dùng này đã append message trong sendMessage()
       final isDuplicate = state.messages.any((m) => m.id == newMessage.id);
       if (!isDuplicate) {
         state = state.copyWith(messages: [...state.messages, newMessage]);
       }
+    });
+
+    // Huỷ subscription khi provider bị autoDispose
+    ref.onDispose(() {
+      _socketSub?.cancel();
+      _socketSub = null;
     });
   }
 
