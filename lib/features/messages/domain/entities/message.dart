@@ -16,7 +16,7 @@ class ReplyMoment {
   factory ReplyMoment.fromJson(Map<String, dynamic> json) => ReplyMoment(
         id: json['id'] as String,
         imageUrl: json['imageUrl'] as String?,
-        createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : null,
+        createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String).toLocal() : null,
         authorName: json['authorName'] as String?,
         authorAvatar: json['authorAvatar'] as String?,
       );
@@ -46,7 +46,7 @@ final class Message {
         conversationId: json['conversationId'] as String,
         senderId: json['senderId'] as String,
         content: json['content'] as String,
-        createdAt: DateTime.parse(json['createdAt'] as String),
+        createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
         isDeleted: json['isDeleted'] as bool? ?? false,
         replyToMoment: json['replyToMoment'] != null
             ? ReplyMoment.fromJson(json['replyToMoment'] as Map<String, dynamic>)

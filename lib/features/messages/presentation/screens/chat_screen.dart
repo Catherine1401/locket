@@ -56,6 +56,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
+  // Scroll to bottom helper
+  void _scrollToBottom({bool animated = true}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      if (animated) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    });
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -64,6 +80,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   void _onScroll() {
+    // Scroll lên đầu (minScrollExtent) → load tin nhắn cũ hơn
     if (_scrollController.position.pixels <=
         _scrollController.position.minScrollExtent + 80) {
       final chatState = ref.read(chatProvider);
@@ -83,15 +100,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       await ref
           .read(chatProvider.notifier)
           .sendMessage(widget.conversationId, text);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-          );
-        }
-      });
+      _scrollToBottom();
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
@@ -102,6 +111,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final chatState = ref.watch(chatProvider);
     final myProfile = ref.watch(profileProvider).value;
     final myId = myProfile?.id ?? '';
+
+    // Auto-scroll khi load xong lần đầu
+    ref.listen<ChatState>(chatProvider, (prev, next) {
+      // Load xong lần đầu: isLoading false → scroll xuống cuối
+      if ((prev?.isLoading ?? true) && !next.isLoading && next.messages.isNotEmpty) {
+        _scrollToBottom(animated: false);
+      }
+      // Nhận message mới qua socket (messages tăng, không phải loadMore)
+      if (prev != null &&
+          !next.isLoadingMore &&
+          next.messages.length > prev.messages.length) {
+        // Chỉ scroll nếu user đang ở gần đáy (trong vòng 200px)
+        if (_scrollController.hasClients) {
+          final pos = _scrollController.position;
+          final nearBottom = pos.pixels >= pos.maxScrollExtent - 200;
+          if (nearBottom) _scrollToBottom();
+        }
+      }
+    });
 
     final partnerName = widget.conversation?.partnerName ?? 'Tin nhắn';
     final partnerAvatar = widget.conversation?.partnerAvatar;

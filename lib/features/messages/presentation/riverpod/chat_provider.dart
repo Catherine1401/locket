@@ -59,7 +59,7 @@ class ChatNotifier extends Notifier<ChatState> {
       final useCase = await ref.read(getMessagesUseCaseProvider.future);
       final result = await useCase.call(conversationId);
       state = ChatState(
-        messages: result.messages,
+        messages: result.messages.reversed.toList(), // API trả DESC → đảo lại cho UI (oldest→newest)
         isLoading: false,
         nextCursor: result.nextCursor,
         hasMore: result.nextCursor != null,
@@ -123,7 +123,7 @@ class ChatNotifier extends Notifier<ChatState> {
         nextCursor: state.nextCursor,
       );
       state = state.copyWith(
-        messages: [...result.messages, ...state.messages],
+        messages: [...result.messages.reversed, ...state.messages], // older prepended
         isLoadingMore: false,
         nextCursor: result.nextCursor,
         hasMore: result.nextCursor != null,
