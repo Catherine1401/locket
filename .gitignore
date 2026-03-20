@@ -1,4 +1,4 @@
-nv/
+env/
 # Miscellaneous
 *.class
 *.log
